@@ -28,9 +28,9 @@ truckMoveUp (('-':as):(b:bs):(c:cs):(d:ds):xs) = ((b:as):(c:bs):(d:cs):('-':ds):
 
 --return all states achieved by moving one vehicle one space, considering 1 column
 --tests:
--- ["A","A","A","-","B","B"] should return [["-","A","A","A","B","B"],["A","A","A","B","B","-"]]
--- ["-","B","B","-","-"] should return [["B","B","-","-","-"],["-","-","B","B","-"]]
--- ["-","C","C","C","-"] should return [["C","C","C","-","-"],["-","-","C","C","C"]]
+-- ["A","A","A","-","B","B"] [] should return [["-","A","A","A","B","B"],["A","A","A","B","B","-"]]
+-- ["-","B","B","-","-"] [] should return [["B","B","-","-","-"],["-","-","B","B","-"]]
+-- ["-","C","C","C","-"] [] should return [["C","C","C","-","-"],["-","-","C","C","C"]]
 verticalMoves :: [String] -> [String] -> [[String]]
 verticalMoves [] _ = []
 verticalMoves (a:[]) _ = []
@@ -49,5 +49,29 @@ verticalMoves ((a:as):(b:bs):(c:cs):(d:ds):xs) visitedRows
 	| a /= '-' && a == b && c == '-' = (visitedRows ++ carMoveDown ((a:as):(b:bs):(c:cs):(d:ds):xs)): --add car down state
 											verticalMoves ((c:cs):(d:ds):xs) (visitedRows ++ (a:as):(b:bs):[]) --advance two rows
 	| otherwise = verticalMoves ((b:bs):(c:cs):(d:ds):xs) (visitedRows ++ (a:as):[]) --advance one row
+
+--return all states achieved by moving one vehicle one space, considering 1 row
+--tests:
+-- "AAA-BB" "" should return ["-AAABB","AAABB-"]
+-- "-BB--" "" should return ["BB---","--BB-"]
+-- "-CCC-" "" should return ["CCC--","--CCC"]
+horizontalMoves :: String -> String -> [String]
+horizontalMoves [] _ = [] 
+horizontalMoves (a:[]) _ = []
+horizontalMoves (a:b:[]) _ = []
+horizontalMoves (a:b:c:[]) visitedCols
+	| a == '-' && b /= '-' && b == c = [visitedCols ++ carMoveLeft (a:b:c:[])] --add car left state, we're done
+	| a /= '-' && a == b && c == '-' = [visitedCols ++ carMoveRight (a:b:c:[])]--add car right state, we're done
+	| otherwise = []
+horizontalMoves (a:b:c:d:xs) visitedCols
+	| a == '-' && b /= '-' && b == c && c == d = (visitedCols ++ truckMoveLeft (a:b:c:d:xs)): -- add truck left state
+													horizontalMoves (b:c:d:xs) (visitedCols ++ a:[]) --advance one col
+	| a /= '-' && a == b && b == c && d == '-' = (visitedCols ++ truckMoveRight (a:b:c:d:xs)): -- add truck right state
+													horizontalMoves (d:xs) (visitedCols ++ a:b:c:[]) --advance three cols
+	| a == '-' && b /= '-' && b == c = (visitedCols ++ carMoveLeft (a:b:c:d:xs)): -- add car left state
+													horizontalMoves (b:c:d:xs) (visitedCols ++ a:[]) --advance one col
+	| a /= '-' && a == b && c == '-' = (visitedCols ++ carMoveRight (a:b:c:d:xs)): -- add car right state
+													horizontalMoves (c:d:xs) (visitedCols ++ a:b:[])--advance two cols
+	| otherwise = horizontalMoves (b:c:d:xs) (visitedCols ++ a:[]) --advance one col
 
 
