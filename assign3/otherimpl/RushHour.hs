@@ -1,7 +1,7 @@
 import Data.List
 
 -- start is the starting state
-rushhour start = printStrMatrix (statesearch [start] [])
+rushhour start = printStrMatrix (reverse (statesearch [start] []))
   
 -- this searches all possible states for the goal state.
 statesearch :: [[String]] -> [[String]] -> [[String]]
