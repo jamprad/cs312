@@ -21,20 +21,23 @@ truckMoveRight (a:b:c:'-':xs) = ('-':a:b:c:xs)
 -- ["A--","ABC","ABC","--D","--D"],
 -- ["A-C","ABC,"ABD","--D","--D"]]
 verticalMoves :: [String] -> [[String]]
-verticalMoves state = map transpose (horizontalMoves (transpose state) [])
+verticalMoves state = map transpose (horizontalMoves (transpose state))
 
--- horizontalMoves state visitedRows returns all states achieved by moving one vehicle one space horizontally
+-- horizontalMoves state returns all states achieved by moving one vehicle one space horizontally
 --tests:
--- ["AAA-BB","-BB---",""-CCC--""] [] should return:
+-- ["AAA-BB","-BB---",""-CCC--""] should return:
 -- [["-AAABB",...],
 -- ["AAABB-",...],
 -- [...,"BB---",...],
 -- [...,"--BB--",...],
 -- [...,"CCC--"],
 -- [...,"CCC--"]]
-horizontalMoves :: [String] -> [String] -> [[String]]
-horizontalMoves [] _ = []
-horizontalMoves (x:xs) visitedRows = [visitedRows ++ (move:xs) | move <- horizontalRowMoves x []] ++ horizontalMoves xs (visitedRows ++ x:[])
+horizontalMoves :: [String] -> [[String]]
+horizontalMoves state = horizontalMoves' state []
+
+horizontalMoves' :: [String] -> [String] -> [[String]] 
+horizontalMoves' [] _ = []
+horizontalMoves' (x:xs) visitedRows = [visitedRows ++ (move:xs) | move <- horizontalRowMoves x []] ++ horizontalMoves' xs (visitedRows ++ x:[])
 
 --return all states achieved by moving one vehicle one space horizontally, considering 1 row
 --tests:
