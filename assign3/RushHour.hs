@@ -1,5 +1,33 @@
 import Data.List
 
+--test:
+-- ["--B---","--B---","XXB---","--AA--","------","------"]
+-- ["--B---","--B--F","XXB--F","--AA-E","-----E","-----E"]
+rush_hour start = printStrMatrix (reverse (statesearch [start] []))
+
+statesearch :: [[String]] -> [[String]] -> [[String]]
+statesearch unexplored path
+   | null unexplored              = []
+   | elem (head unexplored) path = statesearch (tail unexplored) path
+   | isGoalState (head unexplored)	= (head unexplored):path -- found our goal on this path!
+   | (not (null result))          = result
+   | otherwise                    = 
+        statesearch (tail unexplored) path
+     where result = statesearch 
+                       (generateNewStates (head unexplored)) 
+                       ((head unexplored):path)
+
+--generate new states that are not on this path
+generateNewStates :: [String] -> [[String]]
+generateNewStates state = [newState | newState <- concat [(horizontalMoves state), (verticalMoves state)]]
+
+--goal state has XX in last two columns of 3rd row
+--test:
+-- ["---","---","-XX"] should return True
+isGoalState :: [String] -> Bool
+isGoalState candidate = ((take 2 (reverse (candidate !! 2))) == "XX")
+
+--following functions do the text manipulation for moves
 carMoveLeft :: String -> String
 carMoveLeft ('-':b:c:xs) = (b:c:'-':xs)
 
@@ -62,3 +90,17 @@ horizontalRowMoves (a:b:c:d:xs) visitedCols
 	| a /= '-' && a == b && c == '-' = (visitedCols ++ carMoveRight (a:b:c:d:xs)): -- add car right state
 													horizontalRowMoves (c:d:xs) (visitedCols ++ a:b:[])--advance two cols
 	| otherwise = horizontalRowMoves (b:c:d:xs) (visitedCols ++ a:[]) --advance one col
+
+printStrMatrix :: [[String]] -> IO()
+printStrMatrix [] = printStrList []
+printStrMatrix (x:xs) = 
+                  do 
+                    printStrList x
+                    printStrMatrix xs
+
+printStrList :: [String] -> IO()
+printStrList [] = putStrLn "" 
+printStrList (x:xs) = 
+                  do
+                    putStrLn x
+                    printStrList xs
