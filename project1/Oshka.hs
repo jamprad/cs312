@@ -5,10 +5,16 @@ oshka_o6o7 :: [String] -> Char -> Int -> [String]
 oshka_o6o7 start turn depth = []
 
 --return all players' moves
+--player must be moving in the "forward direction"
+--
+--for the other player (moving in the "reverse direction")
+--	call: map reverse (playerMoves_o6o7 (reverse state) otherPlayer)
 --
 --tests:
 -- playerMoves_o6o7 ["wwww","---","--","---","bbbb"] 'w' 
 --		returns [["-www","w--","--","---","bbbb"],["w-ww","-w-","--","---","bbbb"],["ww-w","--w","--","---","bbbb"],["w-ww","w--","--","---","bbbb"],["ww-w","-w-","--","---","bbbb"],["www-","--w","--","---","bbbb"]]
+-- map reverse (playerMoves_o6o7 (reverse ["wwww","---","--","---","bbbb"]) 'b')
+--		returns [["wwww","---","--","b--","-bbb"],["wwww","---","--","-b-","b-bb"],["wwww","---","--","--b","bb-b"],["wwww","---","--","b--","b-bb"],["wwww","---","--","-b-","bb-b"],["wwww","---","--","--b","bbb-"]]
 -- playerMoves_o6o7 ["wwww","w-w","bb","---","bbbb"] 'w' 
 --		returns [["w-ww","www","bb","---","bbbb"],["ww-w","www","bb","---","bbbb"],["wwww","w--","b-","-w-","bbbb"],["wwww","--w","-b","-w-","bbbb"]]
 -- playerMoves_o6o7 ["wwww","w-w","bb","w-w","-bb-"] 'w' 
