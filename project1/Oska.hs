@@ -4,6 +4,48 @@ import Debug.Trace
 oshka_o6o7 :: [String] -> Char -> Int -> [String]
 oshka_o6o7 start turn depth = []
 
+--minimax algorithm:
+-- 1. generate game tree to depth levels
+-- 2. top level is MAX, next is MIN...
+-- 3. apply evaluation function to all the terminal (leaf) states/boards to get "goodness" values
+-- 4. if the parent is at a MIN level, take the minimum value of its children
+--		if the parent is at a MAX level, then the value is the maximum of the values of its children
+-- 5. propagate values as in step 4 until the MAX at the top chooses its move
+
+
+--evaluateBoard_o6o7 board player
+-- (a high score is good)
+--
+-- scoring method:
+--		o player's pieces on the ith row contribute i to the score
+--		o other player's pieces on the ith row contribue -(n - i + 1) to the score
+--		o SHOULD BE MODIFIED TO TAKE WINS/LOSSES INTO ACOUNT (rewarding wins, penalizing losses) TODO
+--
+evaluateBoard_o6o7 :: [String] -> Char -> Int
+evaluateBoard_o6o7 board player = evaluateBoard_o6o7' board player (length board) 1
+
+evaluateBoard_o6o7' :: [String] -> Char -> Int -> Int -> Int
+evaluateBoard_o6o7' [] _ _ _= 0
+evaluateBoard_o6o7' (x:xs) player n i = (evaluateRow_o6o7 x player n i) + (evaluateBoard_o6o7' xs player n (i+1))
+
+--evaluateRow_o6o7 row player n i
+-- (a high score is good)
+evaluateRow_o6o7 :: String -> Char -> Int -> Int -> Int
+evaluateRow_o6o7 [] _ _ _ = 0
+evaluateRow_o6o7 (x:xs) player n i 
+	| x == player = i + evaluateRow_o6o7 xs player n i
+	| x == otherPlayer player = (-(n - i + 1)) + evaluateRow_o6o7 xs player n i
+	| otherwise = evaluateRow_o6o7 xs player n i
+
+--player wins if:
+--	1. player has pieces left and otherPlayer doesn't
+--  2. if all player's pieces are on rowN and all otherPlayer's pieces are on row1:
+--			player has more pieces than otherPlayer
+--  3. if all player's pieces are on row n (and all otherPlayer has pieces not on row1)
+-- 		return the best score possible = length rowN * N
+playerWinsBoard_o67 :: [String] -> Char -> Int
+playerWinsBoard_o67 board player = 0 --TODO
+
 --return all players' moves
 --player must be moving in the "forward direction"
 --
