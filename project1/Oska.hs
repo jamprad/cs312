@@ -148,7 +148,7 @@ playerRowTakeMoves_o6o7' ((a:as):(b:bs):(c:cs):[]) player (fAs,fBs,fCs,lAs,lBs,l
 																playerRowTakeMoves_o6o7' (as:bs:cs:[]) player ((fAs ++ [a]),(fBs ++ [b]),(fCs ++ [c]),lAs,lBs,lCs) --next take moves
 	| otherwise = playerRowTakeMoves_o6o7' (as:bs:cs:[]) player ((fAs ++ [a]),(fBs ++ [b]),(fCs ++ [c]),lAs,lBs,lCs) -- next take moves
 
---precondition: called on 'W' or 'B'
+--precondition: called on 'w' or 'b'
 otherPlayer :: Char -> Char
 otherPlayer 'w' = 'b'
 otherPlayer 'b' = 'w'
