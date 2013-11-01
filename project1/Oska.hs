@@ -8,7 +8,7 @@ oska_o6o7 start turn depth
 	| turn == 'b' = oska_o6o7' (reverse start) turn depth
 
 oska_o6o7' :: [String] -> Char -> Int -> [String]
-oska_o6o7 start turn depth = start
+oska_o6o7' start turn depth = start --stub
 
 --minimax algorithm:
 -- 1. generate game tree to depth levels
@@ -17,16 +17,19 @@ oska_o6o7 start turn depth = start
 -- 4. if the parent is at a MIN level, take the minimum value of its children
 --		if the parent is at a MAX level, then the value is the maximum of the values of its children
 -- 5. propagate values as in step 4 until the MAX at the top chooses its move
-minimax :: [String] -> Char -> Int -> Int -> ([String], Int)
-minimax board player depth level
---	| gameEnd
-	| (depth == level) && (level `rem` 2 == 0) = maximumBy (comparing score_o6o7) [(move, (evaluateBoard_o6o7 move player)) | move <- playerMoves_o6o7 state player]
-	| (depth == level) && (level `rem` 2 == 1) = minimumBy (comparing score_o6o7) [(move, (evaluateBoard_o6o7 move player)) | move <- playerMoves_o6o7 state (otherPlayer player)]
-	| (level `rem` 2 == 0) = maximumBy (comparing score_o6o7)
-									[(minimax move player depth (level + 1)) | move <- playerMoves_o6o7 state player]
-	| (level `rem` 2 == 1) =  minimumBy (comparing score_o6o7)
-									[(minimax move player depth (level + 1)) | move <- playerMoves_o6o7 state (otherPlayer player)]
-	| otherwise = (state, 0)
+minimax_o6o7 :: [String] -> Char -> Int -> Int -> ([String], Int)
+minimax_o6o7 board player depth level
+	| isEndOfGame = (board, endOfGameScore) --leaf
+	| depth == level = (board, evaluateBoard_o6o7 board player) --leaf
+	| otherwise = result
+	where 
+		(isEndOfGame, endOfGameScore) = endOfGame_o6o7 board player;
+		result = case (level `rem` 2) of
+						0 -> maximumBy (comparing score_o6o7) [minimax_o6o7 move player depth (level+1) | move <- playerMoves_o6o7 board player]-- player's turn
+						1 -> minimumBy (comparing score_o6o7) [minimax_o6o7 move player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer player))] -- otherPlayer's turn
+
+endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
+endOfGame_o6o7 board player = (False, 0) --stub
 
 score_o6o7 :: ([String],Int) -> Int
 score_o6o7 (_, score) = score
@@ -56,7 +59,7 @@ evaluateRow_o6o7 (x:xs) player n i
 	| otherwise = evaluateRow_o6o7 xs player n i
 
 maxScore_o6o7 :: [String] -> Int
-maxScore board = (length board)^2
+maxScore_o6o7 board = (length board)^2
 
 --player wins if:
 --	1. player has pieces left and otherPlayer doesn't
@@ -68,9 +71,9 @@ maxScore board = (length board)^2
 -- 		return the best score possible = length rowN * N
 playerWinsBoard_o67 :: [String] -> Char -> Int
 playerWinsBoard_o67 board player
-	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) otherPlayer --potential tie
-		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) otherPlayer = maxScore board --tie breaker
-	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) otherPlayer) = maxScore board
+	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player) --potential tie
+		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) (otherPlayer player) = maxScore_o6o7 board --tie breaker
+	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player)) = maxScore_o6o7 board
 	| otherwise = 0
 
 playerNPieces_o6o7 :: [String] -> Char -> Int
@@ -91,7 +94,7 @@ playerAllPiecesAtEnd_o6o7 board player = playerNPieces_o6o7 board player == play
 --player must be moving in the "forward direction"
 --
 --for the other player (moving in the "reverse direction")
---	call: map reverse (playerMoves_o6o7 (reverse state) otherPlayer)
+--	call: map reverse (playerMoves_o6o7 (reverse board) otherPlayer)
 --
 --tests:
 -- playerMoves_o6o7 ["wwww","---","--","---","bbbb"] 'w' 
@@ -103,7 +106,11 @@ playerAllPiecesAtEnd_o6o7 board player = playerNPieces_o6o7 board player == play
 -- playerMoves_o6o7 ["wwww","w-w","bb","w-w","-bb-"] 'w' 
 --		returns [["w-ww","www","bb","w-w","-bb-"],["ww-w","www","bb","w-w","-bb-"],["wwww","w--","b-","www","-bb-"],["wwww","--w","-b","www","-bb-"],["wwww","w-w","bb","w--","-bbw"],["wwww","w-w","bb","--w-","wbb"]]
 playerMoves_o6o7 :: [String] -> Char -> [[String]]
-playerMoves_o6o7 state player = playerMoves_o6o7' state player []
+playerMoves_o6o7 board player 
+	| null result = [board] --player loses a turn
+	| otherwise = result
+	where
+		result = playerMoves_o6o7' board player []
 
 
 --helps playerMoves_o6o7 return all moves for player, considering 1 row at a time
