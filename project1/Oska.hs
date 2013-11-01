@@ -1,8 +1,14 @@
 import Data.List
+import Data.Ord
 import Debug.Trace
 
-oshka_o6o7 :: [String] -> Char -> Int -> [String]
-oshka_o6o7 start turn depth = []
+oska_o6o7 :: [String] -> Char -> Int -> [String]
+oska_o6o7 start turn depth
+	| turn == 'w' = oska_o6o7' start turn depth
+	| turn == 'b' = oska_o6o7' (reverse start) turn depth
+
+oska_o6o7' :: [String] -> Char -> Int -> [String]
+oska_o6o7 start turn depth = start
 
 --minimax algorithm:
 -- 1. generate game tree to depth levels
@@ -11,7 +17,19 @@ oshka_o6o7 start turn depth = []
 -- 4. if the parent is at a MIN level, take the minimum value of its children
 --		if the parent is at a MAX level, then the value is the maximum of the values of its children
 -- 5. propagate values as in step 4 until the MAX at the top chooses its move
+minimax :: [String] -> Char -> Int -> Int -> ([String], Int)
+minimax board player depth level
+--	| gameEnd
+	| (depth == level) && (level `rem` 2 == 0) = maximumBy (comparing score_o6o7) [(move, (evaluateBoard_o6o7 move player)) | move <- playerMoves_o6o7 state player]
+	| (depth == level) && (level `rem` 2 == 1) = minimumBy (comparing score_o6o7) [(move, (evaluateBoard_o6o7 move player)) | move <- playerMoves_o6o7 state (otherPlayer player)]
+	| (level `rem` 2 == 0) = maximumBy (comparing score_o6o7)
+									[(minimax move player depth (level + 1)) | move <- playerMoves_o6o7 state player]
+	| (level `rem` 2 == 1) =  minimumBy (comparing score_o6o7)
+									[(minimax move player depth (level + 1)) | move <- playerMoves_o6o7 state (otherPlayer player)]
+	| otherwise = (state, 0)
 
+score_o6o7 :: ([String],Int) -> Int
+score_o6o7 (_, score) = score
 
 --evaluateBoard_o6o7 board player
 -- (a high score is good)
@@ -37,14 +55,37 @@ evaluateRow_o6o7 (x:xs) player n i
 	| x == otherPlayer player = (-(n - i + 1)) + evaluateRow_o6o7 xs player n i
 	| otherwise = evaluateRow_o6o7 xs player n i
 
+maxScore_o6o7 :: [String] -> Int
+maxScore board = (length board)^2
+
 --player wins if:
 --	1. player has pieces left and otherPlayer doesn't
 --  2. if all player's pieces are on rowN and all otherPlayer's pieces are on row1:
---			player has more pieces than otherPlayer
+--			player wins if has more pieces than otherPlayer
+--			player loses if has fewer
+--			otherwise draw
 --  3. if all player's pieces are on row n (and all otherPlayer has pieces not on row1)
 -- 		return the best score possible = length rowN * N
 playerWinsBoard_o67 :: [String] -> Char -> Int
-playerWinsBoard_o67 board player = 0 --TODO
+playerWinsBoard_o67 board player
+	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) otherPlayer --potential tie
+		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) otherPlayer = maxScore board --tie breaker
+	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) otherPlayer) = maxScore board
+	| otherwise = 0
+
+playerNPieces_o6o7 :: [String] -> Char -> Int
+playerNPieces_o6o7 [] _ = 0
+playerNPieces_o6o7 (x:xs) player = playerNPiecesRow_o6o7 x player + playerNPieces_o6o7 xs player
+
+playerNPiecesRow_o6o7 :: String -> Char -> Int
+playerNPiecesRow_o6o7 [] _ = 0
+playerNPiecesRow_o6o7 (x:xs) player
+	| x == player = 1 + playerNPiecesRow_o6o7 xs player
+	| otherwise = playerNPiecesRow_o6o7 xs player
+
+playerAllPiecesAtEnd_o6o7 :: [String] -> Char -> Bool
+playerAllPiecesAtEnd_o6o7 board player = playerNPieces_o6o7 board player == playerNPiecesRow_o6o7 (last board) player
+
 
 --return all players' moves
 --player must be moving in the "forward direction"
@@ -83,7 +124,7 @@ playerRowAdvanceMoves_o6o7 rowsAB player = --trace ("playerRowAdvanceMoves_o6o7 
 --return 2 changed rows (rowA and rowB) for LEFT advance moves for player from rowA to rowB
 playerRowLeftAdvanceMoves_o6o7 :: [String] -> Char -> [[String]]
 playerRowLeftAdvanceMoves_o6o7 (rowA:rowB:[]) player
-	| (length rowA) < (length rowB) = playerRowAdvanceMoves_o6o7' (rowA:(init rowB):[]) player ([],[],[last rowB],[])
+	| (length rowA) < (length rowB) = playerRowAdvanceMoves_o6o7' (rowA:(init rowB):[]) player ([],[],[],[last rowB])
 	| otherwise = playerRowAdvanceMoves_o6o7' ((tail rowA):rowB:[]) player ([head rowA],[],[],[])
 
 --return 2 changed rows (rowA and rowB) for RIGHT advance moves for player from rowA to rowB
@@ -204,3 +245,18 @@ last2 (x:xs) = last2 xs
 init2 :: String -> String
 init2 [a,b] = []
 init2 (x:xs) = x:init2 xs
+
+--these printing functions below taken from Connect post by Rodrigo Alves
+printStrMatrix :: [[String]] -> IO()
+printStrMatrix [] = printStrList []
+printStrMatrix (x:xs) = 
+                  do 
+                    printStrList x
+                    printStrMatrix xs
+
+printStrList :: [String] -> IO()
+printStrList [] = putStrLn "" 
+printStrList (x:xs) = 
+                  do
+                    putStrLn x
+                    printStrList xs
