@@ -3,12 +3,13 @@ import Data.Ord
 import Debug.Trace
 
 oska_o6o7 :: [String] -> Char -> Int -> [String]
-oska_o6o7 start turn depth
-	| turn == 'w' = oska_o6o7' start turn depth
-	| turn == 'b' = oska_o6o7' (reverse start) turn depth
+oska_o6o7 start turn depth = case turn of
+								'w' -> oska_o6o7' start turn depth
+								'b' -> reverse (oska_o6o7' (reverse start) turn depth)
 
 oska_o6o7' :: [String] -> Char -> Int -> [String]
-oska_o6o7' start turn depth = start --stub
+oska_o6o7' start turn depth = move
+	where (move, score) = minimax_o6o7 (start,0) turn depth 0
 
 --minimax algorithm:
 -- 1. generate game tree to depth levels
@@ -17,16 +18,18 @@ oska_o6o7' start turn depth = start --stub
 -- 4. if the parent is at a MIN level, take the minimum value of its children
 --		if the parent is at a MAX level, then the value is the maximum of the values of its children
 -- 5. propagate values as in step 4 until the MAX at the top chooses its move
-minimax_o6o7 :: [String] -> Char -> Int -> Int -> ([String], Int)
-minimax_o6o7 board player depth level
-	| isEndOfGame = (board, endOfGameScore) --leaf
-	| depth == level = (board, evaluateBoard_o6o7 board player) --leaf
-	| otherwise = result
+minimax_o6o7 :: ([String],Int) -> Char -> Int -> Int -> ([String], Int)
+minimax_o6o7 (board,score) player depth level
+	| isEndOfGame = (board, endOfGameScore) --leaf because this board is an end game board (assigns correct endOfGameScore if we are at depth, too)
+	| depth == level = (board, evaluateBoard_o6o7 board player) --leaf because we are at depth
+	| otherwise = (resultBoard, score + resultScore) --non-leaf 
 	where 
 		(isEndOfGame, endOfGameScore) = endOfGame_o6o7 board player;
-		result = case (level `rem` 2) of
-						0 -> maximumBy (comparing score_o6o7) [minimax_o6o7 move player depth (level+1) | move <- playerMoves_o6o7 board player]-- player's turn
-						1 -> minimumBy (comparing score_o6o7) [minimax_o6o7 move player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer player))] -- otherPlayer's turn
+		(resultBoard, resultScore) = case (level `rem` 2) of
+						0 -> maximumBy (comparing score_o6o7) 
+								[minimax_o6o7 (move,score) player depth (level+1) | move <- playerMoves_o6o7 board player]-- player's turn
+						1 -> minimumBy (comparing score_o6o7) 
+								[minimax_o6o7 (move,score) player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer player))] -- otherPlayer's turn
 
 endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
 endOfGame_o6o7 board player = (False, 0) --stub
