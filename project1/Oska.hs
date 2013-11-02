@@ -13,23 +13,40 @@ oska_o6o7' start turn depth = move
 
 --minimax algorithm:
 -- 1. generate game tree to depth levels
--- 2. top level is MAX, next is MIN...
+-- 2. top level (level 0) is MAX, next is MIN...
 -- 3. apply evaluation function to all the terminal (leaf) states/boards to get "goodness" values
 -- 4. if the parent is at a MIN level, take the minimum value of its children
 --		if the parent is at a MAX level, then the value is the maximum of the values of its children
 -- 5. propagate values as in step 4 until the MAX at the top chooses its move
+--
+--	eg. for depth 4
+--		level 	0	MAX
+--						(if isEndOfGame then endOfGameScore else MAX player's moves...)
+--		level 	1 	MIN
+--						(if isEndOfGame then endOfGameScore else MIN otherPlayer's moves...)
+--		level 	2   MAX
+--						(if isEndOfGame then endOfGameScore else MAX player's moves...)
+--      level 	3	MIN
+--						(if isEndOfGame then endOfGameScore else MIN otherPlayer's moves...)
+--		level 	4
+--						evaluateBoard
+--
 minimax_o6o7 :: ([String],Int) -> Char -> Int -> Int -> ([String], Int)
-minimax_o6o7 (board,score) player depth level
+minimax_o6o7 (board,boardScore) player depth level
+	| trace ("level " ++ show level ++ ": board = " ++ show board) False = undefined --see http://www.haskell.org/haskellwiki/Debugging
 	| isEndOfGame = (board, endOfGameScore) --leaf because this board is an end game board (assigns correct endOfGameScore if we are at depth, too)
 	| depth == level = (board, evaluateBoard_o6o7 board player) --leaf because we are at depth
-	| otherwise = (resultBoard, score + resultScore) --non-leaf 
+	| otherwise = case level of 
+						0 -> (resultBoard, boardScore + resultScore)
+						_ -> (board, boardScore + resultScore) --non-leaf 
 	where 
 		(isEndOfGame, endOfGameScore) = endOfGame_o6o7 board player;
 		(resultBoard, resultScore) = case (level `rem` 2) of
-						0 -> maximumBy (comparing score_o6o7) 
-								[minimax_o6o7 (move,score) player depth (level+1) | move <- playerMoves_o6o7 board player]-- player's turn
-						1 -> minimumBy (comparing score_o6o7) 
-								[minimax_o6o7 (move,score) player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer player))] -- otherPlayer's turn
+						0 -> maximumBy (comparing score_o6o7)
+								[minimax_o6o7 (move,boardScore) player depth (level+1) | move <- playerMoves_o6o7 board player] --player's turn
+						1 -> minimumBy (comparing score_o6o7)
+								[minimax_o6o7 (move, boardScore) player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer player))] --otherPlayer's turn
+
 
 endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
 endOfGame_o6o7 board player = (False, 0) --stub
@@ -37,13 +54,13 @@ endOfGame_o6o7 board player = (False, 0) --stub
 score_o6o7 :: ([String],Int) -> Int
 score_o6o7 (_, score) = score
 
+
 --evaluateBoard_o6o7 board player
 -- (a high score is good)
 --
 -- scoring method:
 --		o player's pieces on the ith row contribute i to the score
---		o other player's pieces on the ith row contribue -(n - i + 1) to the score
---		o SHOULD BE MODIFIED TO TAKE WINS/LOSSES INTO ACOUNT (rewarding wins, penalizing losses) TODO
+--		o other player's pieces on the ith row contribue -(n - i + 1) to the score=
 --
 evaluateBoard_o6o7 :: [String] -> Char -> Int
 evaluateBoard_o6o7 board player = evaluateBoard_o6o7' board player (length board) 1
