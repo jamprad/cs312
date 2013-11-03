@@ -49,7 +49,25 @@ minimax_o6o7 (board,boardScore) player depth level
 
 
 endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
-endOfGame_o6o7 board player = (False, 0) --stub
+endOfGame_o6o7 board player
+	| otherPlayerNPieces == 0 = (True, maxScore_o6o7 board) --player wins
+	| playerNPieces == 0 = (True, -(maxScore_o6o7 board))
+	| playerAllPiecesAtEnd && otherPlayerAllPiecesAtEnd = case (playerNPiecesAtEnd - otherPlayerNPiecesAtEnd) of
+															x | x > 0 -> (True, maxScore_o6o7 board) --player wins
+															0 -> (True, 0) --tie game
+															y | y < 0 -> (True, (-(maxScore_o6o7 board))) --otherPlayer wins
+	| playerAllPiecesAtEnd = (True, maxScore_o6o7 board) --player wins
+	| otherPlayerAllPiecesAtEnd = (True, (-(maxScore_o6o7 board))) --otherPlayer wins
+	| otherwise = (False, 0)
+	where 
+		playerNPieces = playerNPieces_o6o7 board player;
+		otherPlayerNPieces = playerNPieces_o6o7 board (otherPlayer player);
+		playerAllPiecesAtEnd = playerAllPiecesAtEnd_o6o7 board player;
+		otherPlayerAllPiecesAtEnd = playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player);
+		playerNPiecesAtEnd = playerNPiecesRow_o6o7 (last board) player;
+		otherPlayerNPiecesAtEnd = playerNPiecesRow_o6o7 (head board) (otherPlayer player)
+
+
 
 score_o6o7 :: ([String],Int) -> Int
 score_o6o7 (_, score) = score
@@ -89,12 +107,12 @@ maxScore_o6o7 board = (length board)^2
 --			otherwise draw
 --  3. if all player's pieces are on row n (and all otherPlayer has pieces not on row1)
 -- 		return the best score possible = length rowN * N
-playerWinsBoard_o67 :: [String] -> Char -> Int
-playerWinsBoard_o67 board player
-	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player) --potential tie
-		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) (otherPlayer player) = maxScore_o6o7 board --tie breaker
-	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player)) = maxScore_o6o7 board
-	| otherwise = 0
+--playerWinsBoard_o67 :: [String] -> Char -> Int
+--playerWinsBoard_o67 board player
+--	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player) --potential tie
+--		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) (otherPlayer player) = maxScore_o6o7 board --tie breaker
+--	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player)) = maxScore_o6o7 board
+--	| otherwise = 0
 
 playerNPieces_o6o7 :: [String] -> Char -> Int
 playerNPieces_o6o7 [] _ = 0
