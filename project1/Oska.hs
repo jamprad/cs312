@@ -2,6 +2,8 @@ import Data.List
 import Data.Ord
 import Debug.Trace
 
+--ASSUMPTION:
+-- White's "home" row is the first element in the board format list
 oska_o6o7 :: [String] -> Char -> Int -> [String]
 oska_o6o7 start turn depth = case turn of
 								'w' -> oska_o6o7' start turn depth
@@ -35,12 +37,15 @@ minimax_o6o7 :: ([String],Int) -> Char -> Int -> Int -> ([String], Int)
 minimax_o6o7 (board,boardScore) player depth level
 	| trace ("level " ++ show level ++ ": board = " ++ show board) False = undefined --see http://www.haskell.org/haskellwiki/Debugging
 	| isEndOfGame = (board, endOfGameScore) --leaf because this board is an end game board (assigns correct endOfGameScore if we are at depth, too)
-	| depth == level = (board, evaluateBoard_o6o7 board player) --leaf because we are at depth
-	| otherwise = case level of 
-						0 -> (resultBoard, boardScore + resultScore)
-						_ -> (board, boardScore + resultScore) --non-leaf 
+	| depth == level = do trace ("\tscore = " ++ show evaluateBoard) $ 
+						(board, evaluateBoard) --leaf because we are at depth
+	| otherwise = do trace ("score = " ++ show (boardScore + resultScore)) $
+						case level of
+							0 -> (resultBoard, boardScore + resultScore)
+							_ -> (board, boardScore + resultScore)
 	where 
 		(isEndOfGame, endOfGameScore) = endOfGame_o6o7 board player;
+		evaluateBoard = evaluateBoard_o6o7 board player;
 		(resultBoard, resultScore) = case (level `rem` 2) of
 						0 -> maximumBy (comparing score_o6o7)
 								[minimax_o6o7 (move,boardScore) player depth (level+1) | move <- playerMoves_o6o7 board player] --player's turn
@@ -50,16 +55,17 @@ minimax_o6o7 (board,boardScore) player depth level
 
 endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
 endOfGame_o6o7 board player
-	| otherPlayerNPieces == 0 = (True, maxScore_o6o7 board) --player wins
-	| playerNPieces == 0 = (True, -(maxScore_o6o7 board))
+	| otherPlayerNPieces == 0 = (True, maxScore) --player wins
+	| playerNPieces == 0 = (True, (-maxScore)) --otherPlayer wins
 	| playerAllPiecesAtEnd && otherPlayerAllPiecesAtEnd = case (playerNPiecesAtEnd - otherPlayerNPiecesAtEnd) of
-															x | x > 0 -> (True, maxScore_o6o7 board) --player wins
+															x | x > 0 -> (True, maxScore) --player wins
 															0 -> (True, 0) --tie game
-															y | y < 0 -> (True, (-(maxScore_o6o7 board))) --otherPlayer wins
-	| playerAllPiecesAtEnd = (True, maxScore_o6o7 board) --player wins
-	| otherPlayerAllPiecesAtEnd = (True, (-(maxScore_o6o7 board))) --otherPlayer wins
+															y | y < 0 -> (True, (-maxScore)) --otherPlayer wins
+	| playerAllPiecesAtEnd = (True, maxScore) --player wins
+	| otherPlayerAllPiecesAtEnd = (True, (-maxScore)) --otherPlayer wins
 	| otherwise = (False, 0)
-	where 
+	where
+		maxScore = maxScore_o6o7 (length board) 
 		playerNPieces = playerNPieces_o6o7 board player;
 		otherPlayerNPieces = playerNPieces_o6o7 board (otherPlayer player);
 		playerAllPiecesAtEnd = playerAllPiecesAtEnd_o6o7 board player;
@@ -96,8 +102,8 @@ evaluateRow_o6o7 (x:xs) player n i
 	| x == otherPlayer player = (-(n - i + 1)) + evaluateRow_o6o7 xs player n i
 	| otherwise = evaluateRow_o6o7 xs player n i
 
-maxScore_o6o7 :: [String] -> Int
-maxScore_o6o7 board = (length board)^2
+maxScore_o6o7 :: Int -> Int
+maxScore_o6o7 n = n^2
 
 --player wins if:
 --	1. player has pieces left and otherPlayer doesn't
@@ -290,18 +296,3 @@ last2 (x:xs) = last2 xs
 init2 :: String -> String
 init2 [a,b] = []
 init2 (x:xs) = x:init2 xs
-
---these printing functions below taken from Connect post by Rodrigo Alves
-printStrMatrix :: [[String]] -> IO()
-printStrMatrix [] = printStrList []
-printStrMatrix (x:xs) = 
-                  do 
-                    printStrList x
-                    printStrMatrix xs
-
-printStrList :: [String] -> IO()
-printStrList [] = putStrLn "" 
-printStrList (x:xs) = 
-                  do
-                    putStrLn x
-                    printStrList xs
