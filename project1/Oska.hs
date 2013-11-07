@@ -52,7 +52,14 @@ minimax_o6o7 (board,boardScore) player depth level
 						1 -> minimumBy (comparing score_o6o7)
 								[minimax_o6o7 (move, boardScore) player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer player))] --otherPlayer's turn
 
-
+--
+-- endOfGame test cases:
+--	["bbb","-w","-w-"] 'w' -> (True, -maxScore)
+-- 	["bbb","-w","-w-"] 'b' -> (False, 0)
+--  ["-w-","-w","bbb"] 'b' -> (True, maxScore)
+--	["bbb","ww","---"] 'b' -> (True, maxScore)
+--	["---","bb","---"] 'b' -> (True, maxScore)
+--	["---","bb","---"] 'w' -> (True, -maxScore)
 endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
 endOfGame_o6o7 board player
 	| otherPlayerNPieces == 0 = (True, maxScore) --player wins
