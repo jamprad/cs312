@@ -1,3 +1,8 @@
+--Julian Pradinuk		+	Tucker Buchy
+--44962090					34091090
+--o6o7 						g9c7
+--jampradinuk@gmail.com 	tuckerbuchy@gmail.com
+
 import Data.List
 import Data.Ord
 import Debug.Trace
@@ -64,6 +69,11 @@ endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
 endOfGame_o6o7 board player
 	| otherPlayerNPieces == 0 = (True, maxScore) --player wins
 	| playerNPieces == 0 = (True, (-maxScore)) --otherPlayer wins
+	| null (playerMoves_o6o7 board player) 
+		&& null (playerMoves_o6o7 (reverse board) (otherPlayer_o6o7 player)) = case (playerNPieces - otherPlayerNPieces) of
+																				x | x > 0 -> (True, maxScore) --player wins
+																				0 -> (True, 0) --tie game
+																				y | y < 0 -> (True, (-maxScore)) --otherPlayer wins
 	| playerAllPiecesAtEnd && otherPlayerAllPiecesAtEnd = case (playerNPiecesAtEnd - otherPlayerNPiecesAtEnd) of
 															x | x > 0 -> (True, maxScore) --player wins
 															0 -> (True, 0) --tie game
