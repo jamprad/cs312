@@ -50,7 +50,7 @@ minimax_o6o7 (board,boardScore) player depth level
 						0 -> maximumBy (comparing score_o6o7)
 								[minimax_o6o7 (move,boardScore) player depth (level+1) | move <- playerMoves_o6o7 board player] --player's turn
 						1 -> minimumBy (comparing score_o6o7)
-								[minimax_o6o7 (move, boardScore) player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer player))] --otherPlayer's turn
+								[minimax_o6o7 (move, boardScore) player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer_o6o7 player))] --otherPlayer's turn
 
 --
 -- endOfGame test cases:
@@ -74,11 +74,11 @@ endOfGame_o6o7 board player
 	where
 		maxScore = maxScore_o6o7 (length board) 
 		playerNPieces = playerNPieces_o6o7 board player;
-		otherPlayerNPieces = playerNPieces_o6o7 board (otherPlayer player);
+		otherPlayerNPieces = playerNPieces_o6o7 board (otherPlayer_o6o7 player);
 		playerAllPiecesAtEnd = playerAllPiecesAtEnd_o6o7 board player;
-		otherPlayerAllPiecesAtEnd = playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player);
+		otherPlayerAllPiecesAtEnd = playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer_o6o7 player);
 		playerNPiecesAtEnd = playerNPiecesRow_o6o7 (last board) player;
-		otherPlayerNPiecesAtEnd = playerNPiecesRow_o6o7 (head board) (otherPlayer player)
+		otherPlayerNPiecesAtEnd = playerNPiecesRow_o6o7 (head board) (otherPlayer_o6o7 player)
 
 
 
@@ -106,7 +106,7 @@ evaluateRow_o6o7 :: String -> Char -> Int -> Int -> Int
 evaluateRow_o6o7 [] _ _ _ = 0
 evaluateRow_o6o7 (x:xs) player n i 
 	| x == player = i + evaluateRow_o6o7 xs player n i
-	| x == otherPlayer player = (-(n - i + 1)) + evaluateRow_o6o7 xs player n i
+	| x == otherPlayer_o6o7 player = (-(n - i + 1)) + evaluateRow_o6o7 xs player n i
 	| otherwise = evaluateRow_o6o7 xs player n i
 
 maxScore_o6o7 :: Int -> Int
@@ -122,9 +122,9 @@ maxScore_o6o7 n = n^2
 -- 		return the best score possible = length rowN * N
 --playerWinsBoard_o67 :: [String] -> Char -> Int
 --playerWinsBoard_o67 board player
---	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player) --potential tie
---		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) (otherPlayer player) = maxScore_o6o7 board --tie breaker
---	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer player)) = maxScore_o6o7 board
+--	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer_o6o7 player) --potential tie
+--		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) (otherPlayer_o6o7 player) = maxScore_o6o7 board --tie breaker
+--	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer_o6o7 player)) = maxScore_o6o7 board
 --	| otherwise = 0
 
 playerNPieces_o6o7 :: [String] -> Char -> Int
@@ -236,7 +236,7 @@ playerRowTakeMoves_o6o7 rowsABC player = --trace ("playerRowTakeMoves_o6o7 " ++ 
 -- helps playerRowTakeMoves_o6o7 make the left moves
 playerRowLeftTakeMoves_o6o7 :: [String] -> Char -> [[String]]
 playerRowLeftTakeMoves_o6o7 (rowA:rowB:rowC:[]) player
-	| length rowA < length rowC = playerRowTakeMoves_o6o7' (rowA:(init rowB):(init2 rowC):[]) player ([],[],[],[],[last rowB],(last2 rowC)) --before the middle of the board
+	| length rowA < length rowC = playerRowTakeMoves_o6o7' (rowA:(init rowB):(init2_o6o7 rowC):[]) player ([],[],[],[],[last rowB],(last2_o6o7 rowC)) --before the middle of the board
 	| length rowA == length rowC = playerRowTakeMoves_o6o7' ((init rowA):rowB:(tail rowC):[]) player ([],[],[head rowC],[last rowA],[],[]) -- the middle of the board
 	| otherwise = playerRowTakeMoves_o6o7' ((drop 2 rowA):(tail rowB):rowC:[]) player ((take 2 rowA),[head rowB],[],[],[],[]) -- after the middle of the board
 
@@ -246,7 +246,7 @@ playerRowRightTakeMoves_o6o7 :: [String] -> Char -> [[String]]
 playerRowRightTakeMoves_o6o7 (rowA:rowB:rowC:[]) player
 	| length rowA < length rowC = playerRowTakeMoves_o6o7' (rowA:(tail rowB):(drop 2 rowC):[]) player ([],[head rowB],(take 2 rowC),[],[],[]) -- before the middle of the board
 	| length rowA == length rowC = playerRowTakeMoves_o6o7' ((tail rowA):rowB:(init rowC):[]) player ([head rowA],[],[],[],[],[last rowC]) -- the middle of the board
-	| otherwise = playerRowTakeMoves_o6o7' ((init2 rowA):(init rowB):rowC:[]) player ([],[],[],(last2 rowA),[last rowB],[]) -- after the middle of the board
+	| otherwise = playerRowTakeMoves_o6o7' ((init2_o6o7 rowA):(init rowB):rowC:[]) player ([],[],[],(last2_o6o7 rowA),[last rowB],[]) -- after the middle of the board
 
 --
 -- 	helps playerRowLeftTakeMoves_o6o7 and playerRowRightTakeMoves_o6o7 
@@ -265,7 +265,7 @@ playerRowRightTakeMoves_o6o7 (rowA:rowB:rowC:[]) player
 --			(in this comment, default tuple member values == [])
 --
 -- when rowA is shorter than rowC: 
---		left moves : rowA, init rowB, init2 rowC is passed in the [String]; lBs == [last rowB], lCs == (last2 rowC) 
+--		left moves : rowA, init rowB, init2_o6o7 rowC is passed in the [String]; lBs == [last rowB], lCs == (last2_o6o7 rowC) 
 --		right moves : rowA, tail rowB, drop 2 rowC is passed in the [String]; fBs == [head rowB], fCs == (take 2 rowC)
 --
 -- when rowA is the same length as rowC (we are in the middle of the board):
@@ -274,7 +274,7 @@ playerRowRightTakeMoves_o6o7 (rowA:rowB:rowC:[]) player
 --		
 -- when rowA is longer than rowC:
 --		left moves : drop 2 rowA, tail rowB, rowC is passed in the [String]; fAs == [take 2 rowA], fBs == [head rowB]
---		right moves : init2 rowA, init rowB, rowC is passed in the [String], lAs == (last2 rowA), lBs == [last rowB]
+--		right moves : init2_o6o7 rowA, init rowB, rowC is passed in the [String], lAs == (last2_o6o7 rowA), lBs == [last rowB]
 --	
 --
 --tests: 
@@ -285,21 +285,21 @@ playerRowRightTakeMoves_o6o7 (rowA:rowB:rowC:[]) player
 playerRowTakeMoves_o6o7' :: [String] -> Char -> (String,String,String,String,String,String) -> [[String]]
 playerRowTakeMoves_o6o7' ([]:[]:[]:[]) player (fAs,fBs,fCs,lAs,lBs,lCs) = []
 playerRowTakeMoves_o6o7' ((a:as):(b:bs):(c:cs):[]) player (fAs,fBs,fCs,lAs,lBs,lCs)
-	| a == player && b == (otherPlayer player) && c == '-' = ((fAs ++ (c:as) ++ lAs):(fBs ++ ('-':bs) ++ lBs):(fCs ++ (a:cs) ++ lCs):[]): --return this take move and
+	| a == player && b == (otherPlayer_o6o7 player) && c == '-' = ((fAs ++ (c:as) ++ lAs):(fBs ++ ('-':bs) ++ lBs):(fCs ++ (a:cs) ++ lCs):[]): --return this take move and
 																playerRowTakeMoves_o6o7' (as:bs:cs:[]) player ((fAs ++ [a]),(fBs ++ [b]),(fCs ++ [c]),lAs,lBs,lCs) --next take moves
 	| otherwise = playerRowTakeMoves_o6o7' (as:bs:cs:[]) player ((fAs ++ [a]),(fBs ++ [b]),(fCs ++ [c]),lAs,lBs,lCs) -- next take moves
 
 --precondition: called on 'w' or 'b'
-otherPlayer :: Char -> Char
-otherPlayer 'w' = 'b'
-otherPlayer 'b' = 'w'
+otherPlayer_o6o7 :: Char -> Char
+otherPlayer_o6o7 'w' = 'b'
+otherPlayer_o6o7 'b' = 'w'
 
 --precondition: called on strings of length >= 2
-last2 :: String -> String
-last2 [a,b] = [a,b]
-last2 (x:xs) = last2 xs
+last2_o6o7 :: String -> String
+last2_o6o7 [a,b] = [a,b]
+last2_o6o7 (x:xs) = last2_o6o7 xs
 
 --precondition: called on strings of length >= 2
-init2 :: String -> String
-init2 [a,b] = []
-init2 (x:xs) = x:init2 xs
+init2_o6o7 :: String -> String
+init2_o6o7 [a,b] = []
+init2_o6o7 (x:xs) = x:init2_o6o7 xs

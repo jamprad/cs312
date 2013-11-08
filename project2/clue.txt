@@ -1,0 +1,26 @@
+suspects:
+Colonel Mustard
+Miss Scarlet
+Professor Plum
+Mr. Green
+Mrs. White
+Mrs. Peacock
+
+weapons:
+Rope
+Lead Pipe
+Knife
+Wrench
+Candlestick
+Pistol
+
+rooms:
+Kitchen
+Lounge
+Study
+Library
+Dining Room
+Hall
+Billiards Room
+Conservatory
+Ballroom
