@@ -53,11 +53,10 @@ minimax_o6o7 board player depth level
 						(board, endOfGameScore) --leaf because this board is an end game board (assigns correct endOfGameScore if we are at depth, too)
 	| depth == level = do trace ("\tevaluateBoardScore = " ++ show evaluateBoard) $ 
 						(board, evaluateBoard) --leaf because we are at depth
-	| otherwise = do trace ("resultScore = " ++ show (resultScore) ++ " (level " ++ show level ++ ") resultBoard = " ++ show (resultBoard)) $
-						(resultBoard, resultScore)
-						--case level of
-						--	0 -> (resultBoard, resultScore)
-						--	_ -> (board, resultScore)
+	| otherwise = do trace ("resultScore = " ++ show (resultScore) ++ " resultBoard = " ++ show (resultBoard) ++ " (level " ++ show level ++ ")") $
+						case level of
+							0 -> (resultBoard, resultScore)
+							_ -> (board, resultScore)
 	where 
 		(isEndOfGame, endOfGameScore) = endOfGame_o6o7 board player;
 		evaluateBoard = evaluateBoard_o6o7 board player;
