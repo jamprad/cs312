@@ -7,8 +7,9 @@ import Data.List
 import Data.Ord
 import Debug.Trace
 
---ASSUMPTION:
--- White's "home" row is the first element in the board format list
+--ASSUMPTION ABOUT (start) BOARD DIRECTIONALITY:
+-- White's (w's) "home" row is the first element in the list
+-- Black's (b's) "home" row is the last element in the list
 oska_o6o7 :: [String] -> Char -> Int -> [String]
 oska_o6o7 start turn depth = case turn of
 								'w' -> oska_o6o7' start turn depth
@@ -16,7 +17,7 @@ oska_o6o7 start turn depth = case turn of
 
 oska_o6o7' :: [String] -> Char -> Int -> [String]
 oska_o6o7' start turn depth = move
-	where (move, score) = minimax_o6o7 (start,0) turn depth 0
+	where (move, score) = minimax_o6o7 start turn depth 0
 
 --minimax algorithm:
 -- 1. generate game tree to depth levels
@@ -38,49 +39,71 @@ oska_o6o7' start turn depth = move
 --		level 	4
 --						evaluateBoard
 --
-minimax_o6o7 :: ([String],Int) -> Char -> Int -> Int -> ([String], Int)
-minimax_o6o7 (board,boardScore) player depth level
+--
+--	minimax_o6o7 (board,boardScore) player depth level
+--		returns (nextMove,score)
+--			where 	nextMove = player's next best move,
+--					score = minimax score
+--				by applying the minimax algorithm to depth levels
+--
+minimax_o6o7 :: [String] -> Char -> Int -> Int -> ([String], Int)
+minimax_o6o7 board player depth level
 	| trace ("level " ++ show level ++ ": board = " ++ show board) False = undefined --see http://www.haskell.org/haskellwiki/Debugging
-	| isEndOfGame = (board, endOfGameScore) --leaf because this board is an end game board (assigns correct endOfGameScore if we are at depth, too)
-	| depth == level = do trace ("\tscore = " ++ show evaluateBoard) $ 
+	| isEndOfGame = do trace ("\tendOfGameScore = " ++ show endOfGameScore) $
+						(board, endOfGameScore) --leaf because this board is an end game board (assigns correct endOfGameScore if we are at depth, too)
+	| depth == level = do trace ("\tevaluateBoardScore = " ++ show evaluateBoard) $ 
 						(board, evaluateBoard) --leaf because we are at depth
-	| otherwise = do trace ("score = " ++ show (boardScore + resultScore)) $
-						case level of
-							0 -> (resultBoard, boardScore + resultScore)
-							_ -> (board, boardScore + resultScore)
+	| otherwise = do trace ("resultScore = " ++ show (resultScore) ++ " (level " ++ show level ++ ") resultBoard = " ++ show (resultBoard)) $
+						(resultBoard, resultScore)
+						--case level of
+						--	0 -> (resultBoard, resultScore)
+						--	_ -> (board, resultScore)
 	where 
 		(isEndOfGame, endOfGameScore) = endOfGame_o6o7 board player;
 		evaluateBoard = evaluateBoard_o6o7 board player;
 		(resultBoard, resultScore) = case (level `rem` 2) of
 						0 -> maximumBy (comparing score_o6o7)
-								[minimax_o6o7 (move,boardScore) player depth (level+1) | move <- playerMoves_o6o7 board player] --player's turn
+								[minimax_o6o7 move player depth (level+1) | move <- playerMoves_o6o7 board player] --player's turn
 						1 -> minimumBy (comparing score_o6o7)
-								[minimax_o6o7 (move, boardScore) player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer_o6o7 player))] --otherPlayer's turn
+								[minimax_o6o7 move player depth (level+1) | move <- map reverse (playerMoves_o6o7 (reverse board) (otherPlayer_o6o7 player))] --otherPlayer's turn
 
 --
--- endOfGame test cases:
---	["bbb","-w","-w-"] 'w' -> (True, -maxScore)
--- 	["bbb","-w","-w-"] 'b' -> (False, 0)
---  ["-w-","-w","bbb"] 'b' -> (True, maxScore)
---	["bbb","ww","---"] 'b' -> (True, maxScore)
---	["---","bb","---"] 'b' -> (True, maxScore)
---	["---","bb","---"] 'w' -> (True, -maxScore)
+-- endOfGame_o6o7 board player
+--		returns (isEndOfGame, endOfGameScore)
+--			isEndOfGame == True:
+--				-player has pieces left and otherPlayer doesn't: endOfGameScore == maxScore
+--				-otherPlayer has pieces left and player doesn't: endOfGameScore == -maxScore
+--				-standstill (neither player can move): 
+--											-player has more pieces: endOfGameScore == maxScore
+--											-players have same number of pieces: endOfGameScore == 0
+--											-otherPlayer has more pieces: endOfGameScore == -maxScore
+--				-both players pieces are at end:
+--											-player has more pieces: endOfGameScore == maxScore
+--											-players have same number of pieces: endOfGameScore == 0
+--											-otherPlayer has more pieces: endOfGameScore == -maxScore
+--				-player has all pieces at end: endOfGameScore == maxScore
+--				-otherPlayer has all pieces at end: endOfGameScore == -maxScore
+--			isEndOfGame == False: endOfGameScore == 0
+--
 endOfGame_o6o7 :: [String] -> Char -> (Bool, Int)
 endOfGame_o6o7 board player
-	| otherPlayerNPieces == 0 = (True, maxScore) --player wins
-	| playerNPieces == 0 = (True, (-maxScore)) --otherPlayer wins
-	| null (playerMoves_o6o7 board player) 
-		&& null (playerMoves_o6o7 (reverse board) (otherPlayer_o6o7 player)) = case (playerNPieces - otherPlayerNPieces) of
-																				x | x > 0 -> (True, maxScore) --player wins
-																				0 -> (True, 0) --tie game
-																				y | y < 0 -> (True, (-maxScore)) --otherPlayer wins
+	| otherPlayerNPieces == 0 = (True, maxScore) --player wins, test: ["---","bb","---"] 'b'
+	| playerNPieces == 0 = (True, (-maxScore)) --otherPlayer wins, test: ["---","bb","---"] 'w'
+	| head (playerMoves_o6o7 board player) == board
+		&& head (playerMoves_o6o7 (reverse board) (otherPlayer_o6o7 player)) == reverse board = --do trace ("standstill") $
+														case (playerNPieces - otherPlayerNPieces) of
+															x | x > 0 -> (True, maxScore) --player wins, test: ["www","ww","bbb"] 'w'
+															0 -> (True, 0) --tie game, test: ["www","wb","bbb"] 'w'
+															y | y < 0 -> (True, (-maxScore)) --otherPlayer wins, test: ["www","ww","bbb"] 'b'
 	| playerAllPiecesAtEnd && otherPlayerAllPiecesAtEnd = case (playerNPiecesAtEnd - otherPlayerNPiecesAtEnd) of
-															x | x > 0 -> (True, maxScore) --player wins
-															0 -> (True, 0) --tie game
-															y | y < 0 -> (True, (-maxScore)) --otherPlayer wins
-	| playerAllPiecesAtEnd = (True, maxScore) --player wins
-	| otherPlayerAllPiecesAtEnd = (True, (-maxScore)) --otherPlayer wins
-	| otherwise = (False, 0)
+															x | x > 0 -> (True, maxScore) --player wins, test: ["b--","--","-ww"] 'w'
+															0 -> (True, 0) --tie game, test: ["b--","--","w--"] 'w'
+															y | y < 0 -> (True, (-maxScore)) --otherPlayer wins, test: ["bb-","--","w--"] 'w'
+	| playerAllPiecesAtEnd = (True, maxScore) --player wins, test: ["-b-","-b","-w-"] 'w'
+	| otherPlayerAllPiecesAtEnd = (True, (-maxScore)) --otherPlayer wins, test: ["-b-","-w","-w-"] 'w'
+	| otherwise = (False, 0) --game isn't over yet, test: ["bbb","-w","-w-"] 'b'
+							 --						test: ["bbb","ww","---"] 'b'
+							 --						test: ["---","ww","bbb"] 'w'
 	where
 		maxScore = maxScore_o6o7 (length board) 
 		playerNPieces = playerNPieces_o6o7 board player;
@@ -90,11 +113,9 @@ endOfGame_o6o7 board player
 		playerNPiecesAtEnd = playerNPiecesRow_o6o7 (last board) player;
 		otherPlayerNPiecesAtEnd = playerNPiecesRow_o6o7 (head board) (otherPlayer_o6o7 player)
 
-
-
-score_o6o7 :: ([String],Int) -> Int
-score_o6o7 (_, score) = score
-
+--our max score is defined as the square of n
+maxScore_o6o7 :: Int -> Int
+maxScore_o6o7 n = n^2
 
 --evaluateBoard_o6o7 board player
 -- (a high score is good)
@@ -119,34 +140,22 @@ evaluateRow_o6o7 (x:xs) player n i
 	| x == otherPlayer_o6o7 player = (-(n - i + 1)) + evaluateRow_o6o7 xs player n i
 	| otherwise = evaluateRow_o6o7 xs player n i
 
-maxScore_o6o7 :: Int -> Int
-maxScore_o6o7 n = n^2
 
---player wins if:
---	1. player has pieces left and otherPlayer doesn't
---  2. if all player's pieces are on rowN and all otherPlayer's pieces are on row1:
---			player wins if has more pieces than otherPlayer
---			player loses if has fewer
---			otherwise draw
---  3. if all player's pieces are on row n (and all otherPlayer has pieces not on row1)
--- 		return the best score possible = length rowN * N
---playerWinsBoard_o67 :: [String] -> Char -> Int
---playerWinsBoard_o67 board player
---	| playerAllPiecesAtEnd_o6o7 board player && playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer_o6o7 player) --potential tie
---		&& playerNPieces_o6o7 board player > playerNPieces_o6o7 (reverse board) (otherPlayer_o6o7 player) = maxScore_o6o7 board --tie breaker
---	| playerAllPiecesAtEnd_o6o7 board player && not (playerAllPiecesAtEnd_o6o7 (reverse board) (otherPlayer_o6o7 player)) = maxScore_o6o7 board
---	| otherwise = 0
-
+-- playerNPieces_o6o7 board player
+--	returns the number of pieces remaining for player on board
 playerNPieces_o6o7 :: [String] -> Char -> Int
 playerNPieces_o6o7 [] _ = 0
 playerNPieces_o6o7 (x:xs) player = playerNPiecesRow_o6o7 x player + playerNPieces_o6o7 xs player
 
+-- playerNPiecesRow_o6o7 row player
+--	returns the number of player's pieces in row
 playerNPiecesRow_o6o7 :: String -> Char -> Int
 playerNPiecesRow_o6o7 [] _ = 0
 playerNPiecesRow_o6o7 (x:xs) player
 	| x == player = 1 + playerNPiecesRow_o6o7 xs player
 	| otherwise = playerNPiecesRow_o6o7 xs player
 
+--return True if all player's pieces are at goal row
 playerAllPiecesAtEnd_o6o7 :: [String] -> Char -> Bool
 playerAllPiecesAtEnd_o6o7 board player = playerNPieces_o6o7 board player == playerNPiecesRow_o6o7 (last board) player
 
@@ -303,6 +312,10 @@ playerRowTakeMoves_o6o7' ((a:as):(b:bs):(c:cs):[]) player (fAs,fBs,fCs,lAs,lBs,l
 otherPlayer_o6o7 :: Char -> Char
 otherPlayer_o6o7 'w' = 'b'
 otherPlayer_o6o7 'b' = 'w'
+
+--precondition: called on (board, score) tuples
+score_o6o7 :: ([String],Int) -> Int
+score_o6o7 (_, score) = score
 
 --precondition: called on strings of length >= 2
 last2_o6o7 :: String -> String

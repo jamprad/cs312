@@ -30,3 +30,22 @@ room(hall).
 room(billiardsRoom).
 room(conservatory).
 room(ballroom).
+
+suggest :-
+	write('Player?'),
+	read_term(Player, [colonelMustard,missScarlet,professorPlum,mrGreen,mrsWhite,mrsPeacock]),
+	write('Suspect?'),
+	read(Suspect),
+	write('Room?'),
+	read(Room),
+	write('Weapon?'),
+	read(Weapon),
+	assert(suggestion(Player,Suspect,Room,Weapon)),
+	write(Player),
+	write(' suggested '),
+	write(Suspect),
+	write(' in the '),
+	write(Room),
+	write(' with the '),
+	write(Weapon),
+	write('.').
