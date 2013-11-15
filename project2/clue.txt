@@ -1,3 +1,31 @@
+Minimum deliverables:
+1. initialize the game setup easily
+	-how many players?
+	-order of play (whose turn next?)
+	-which cards am I holding?
+
+2. keep track of my own play
+	-my suggestions
+	-whatever I'm shown
+
+3. see contents of database
+
+4. know when to make an accusation
+
+5. easy-to-understand documentation
+
+6. easy-to-use interface
+
+
+Additional:
+1. take advantage of what can be inferred from suggestions of other players
+
+2. propose suggestions
+
+3. build models of what other players might know and use the models to assess how close they might be to winning
+
+4. advise deceptive suggestions
+
 suspects:
 Colonel Mustard
 Miss Scarlet
