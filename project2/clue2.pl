@@ -210,11 +210,13 @@ makeSuggestion(Player) :-
 	Player =:= 1 ->
 		true;
 		(nPlayers(NPlayers),
-		writef(">>>Who showed a card?\n>>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
-		read(ShowPlayer),
-		(ShowPlayer =:= 1 ->
-			true;
-			inferCardShown(ShowPlayer,[Suspect,Room,Weapon]))).
+		writef(">>>>>Who showed a card?\n>>>>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
+		read(ShowPlayer);
+		between(1, NPlayers,ShowPlayer) ->
+			(ShowPlayer =:= 1 ->
+				true;
+				inferCardShown(ShowPlayer,[Suspect,Room,Weapon]));
+			write('Bad input, try again.\n'),makeSuggestion(Player)).
 
 suggestion(Suspect,Room,Weapon) :-
 	writeSuspects,
