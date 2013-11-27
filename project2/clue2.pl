@@ -103,12 +103,9 @@ readMyCards :-
 		myCards(NCards, 0);
 		(write('Bad input, try again.\n'),readMyCards).
 
-myCards(N, N).
-myCards(N, I) :- 
-	I1 is I + 1,
-	writef(">>>>Card %d\n", [I1]),
-	readCard(1),
-	myCards(N, I1).
+myCards(N, I) :-
+	I < N ->
+		(writef(">>>>Card %d\n", [I1]),readCard(1),I1 is I + 1,myCards(N, I1)); true.
 
 readCard(Player) :-
 	write('>>>>>Type?\n>>>>>>Enter:\n>>>>>>>1 for suspect\n>>>>>>>2 for room\n>>>>>>>3 for weapon\nfollowed by a full stop before hitting return.\n'),
@@ -237,8 +234,6 @@ reportCard :-
 	between(2,NPlayers,ShowPlayer) ->
 		readCard(ShowPlayer);
 		(write('Bad input, try again.\n'),reportCard).
-
-inferCardShown.
 
 % returns true and updates the database 
 %	if the card shown can be (and has not already been) inferred
