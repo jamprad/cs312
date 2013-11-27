@@ -126,7 +126,7 @@ readMyCards :-
 %reads in the cards player 1 card.
 myCards(N, I) :-
 	I < N ->
-		(writef(">>>>Card %d\n", [I1]),readCard(1),I1 is I + 1,myCards(N, I1)); true.
+		(writef(">>>>Card %d\n", [I]),readCard(1),I1 is I + 1,myCards(N, I1)); true.
 
 readCard(Player) :-
 	write('>>>>>Type?\n>>>>>>Enter:\n>>>>>>>1 for suspect\n>>>>>>>2 for room\n>>>>>>>3 for weapon\nfollowed by a full stop before hitting return.\n'),
@@ -251,7 +251,7 @@ makeSuggestion(_) :-
 	writef(">>>Who showed a card?\n>>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
 	read(ShowPlayer),
 	checkIfCanInfer(ShowPlayer,[Suspect,Room,Weapon]).
-
+	
 suggestion(Suspect,Room,Weapon) :-
 	writeSuspects,
 	read(SuspectNo),
