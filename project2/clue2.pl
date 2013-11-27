@@ -4,7 +4,7 @@
 %o6o7                       g9c7
 %jampradinuk@gmail.com      tuckerbuchy@gmail.com
 
-:- dynamic nPlayers/1, firstPlayer/1, hasCard/2.
+:- dynamic nPlayers/1, firstPlayer/1, hasCard/2, totalSuggestions/1, cardSuggestionCount/2.
 
 suspect(colonelMustard).
 suspect(missScarlet).
@@ -54,6 +54,23 @@ weaponno(4,wrench).
 weaponno(5,candlestick).
 weaponno(6,pistol).
 
+%updates the total number of suggestions,
+% this is just a tally keeping track of the number 
+updateTotalSuggestions :- 
+	totalSuggestions(N),
+	N1 is N + 1,
+	retractall(totalSuggestions(_)),
+	assert(totalSuggestions(N1)).
+
+%updates the number of times a card has appeared in a suggestion
+updateCardSuggestions(Card) :-
+	cardSuggestionCount(Card, N) ->
+		%update existing count
+		(N1 is N + 1,
+		retractall(cardSuggestionCount(Card, _)),
+		assert(cardSuggestionCount(Card, N1)));
+		%start one at 1
+		assert(cardSuggestionCount(Card, 1)).
 
 % play clue!
 %
@@ -67,7 +84,9 @@ clue :- clear,
 clear :-
 	retractall(hasCard(_,_)),
 	retractall(firstPlayer(_)),
-	retractall(nPlayers(_)).
+	retractall(nPlayers(_)),
+	retractall(totalSuggestions(_)),
+	retractall(cardSuggestionCount(_,_)).
 
 % game setup:
 %	1. How many players?
@@ -75,6 +94,7 @@ clear :-
 %	3. How many cards are you holding and what are they?
 %
 setup :-
+	assert(totalSuggestions(0)),
 	readNPlayers,
 	readFirstPlayer,
 	readMyCards.
@@ -82,7 +102,7 @@ setup :-
 readNPlayers :-
 	write('>>How many players?\n>>>Enter a number within the range 3-6 followed by a full stop before hitting return.\n'),
 	read(NPlayers),
-	between(3,6,NPlayers) ->
+	(integer(NPlayers),between(3,6,NPlayers)) ->
 		(writef("You are player 1.\nThe player to your left is player 2.\nThe player to your right is player %d.\n", [NPlayers]),
 			assert(nPlayers(NPlayers)));
 		(write('Bad input, try again.\n'),readNPlayers).
@@ -91,18 +111,19 @@ readFirstPlayer :-
 	nPlayers(NPlayers),
 	writef(">>Who starts?\n>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
 	read(FirstPlayer),
-	between(1,NPlayers,FirstPlayer) -> 
+	(integer(FirstPlayer),between(1,NPlayers,FirstPlayer)) -> 
 		(writef("Player %d starts.\n", [FirstPlayer]),
 			assert(firstPlayer(FirstPlayer)));
 		(write('Bad input, try again.\n'),readFirstPlayer).
 
 readMyCards :-
-	write('>>How many cards were you dealt?\n>>>Enter a number greater than 0 followed by a full stop before hitting return.\n'),
+	write('>>How many cards were you dealt?\n>>>Enter a number greater than or equal to 0 followed by a full stop before hitting return.\n'),
 	read(NCards),
-	NCards > 0 ->
+	(integer(NCards),NCards >= 0) ->
 		myCards(NCards, 0);
 		(write('Bad input, try again.\n'),readMyCards).
 
+%reads in the cards player 1 card.
 myCards(N, I) :-
 	I < N ->
 		(writef(">>>>Card %d\n", [I1]),readCard(1),I1 is I + 1,myCards(N, I1)); true.
@@ -110,7 +131,7 @@ myCards(N, I) :-
 readCard(Player) :-
 	write('>>>>>Type?\n>>>>>>Enter:\n>>>>>>>1 for suspect\n>>>>>>>2 for room\n>>>>>>>3 for weapon\nfollowed by a full stop before hitting return.\n'),
 	read(CardType),
-	between(1,3,CardType) ->
+	(integer(CardType),between(1,3,CardType)) ->
 		readCard(Player, CardType);
 		(write('Bad input, try again.\n'),readCard(Player)).
 
@@ -151,6 +172,9 @@ writeWeapons :-
 	forall(weaponno(No,Weapon), writef(">>>>>>%d for %d\n", [No, Weapon])),
 	write('>>>>>>>followed by a full stop before hitting return.\n').
 
+%writes the detective journal to the console
+% 	info in the journal is:
+%		card, owner, times it has been suggested
 writeDetectiveJournal :-
 	writeln('------------DETECTIVE JOURNAL------------\n'),
 	writeln('\tSuspects:'),
@@ -165,17 +189,22 @@ writeDetectiveJournal :-
 %		X P 	if hasCard(P, X)
 %		X 		otherwise
 writeCard(X) :-
-	hasCard(P,X) -> 
-		writef("\t\t%d %d\n", [X,P]);
-		writef("\t\t%d\n", [X]).
+	(cardSuggestionCount(X, TotalCard) ->
+		true;
+		TotalCard is 0),
+	totalSuggestions(Total),
+	(hasCard(P,X) -> 
+		writef("\t\t%d -> Card Owner is %d", [X,P]);
+		writef("\t\t%d", [X])),
+	writef("\n\t\t\tseen in %d of %d suggestions.\n", [TotalCard, Total]).
 
 play(Player) :-
 	(Player =:= 1 -> 
-		write('>>It\'s your turn.\n');
+		(write('>>It\'s your turn.\n'), isAccusationReady);
 		writef(">>It\'s player %d\'s turn.\n", [Player])),
 	writeTurnOptions,
 	read(TurnOption),
-	between(1,4,TurnOption) -> 
+	(integer(TurnOption),between(1,4,TurnOption)) -> 
 		turn(Player, TurnOption);
 		(write('Bad input, try again.\n'),play(Player)).
 
@@ -188,23 +217,32 @@ writeTurnOptions :-
 	forall(turnOption(No,Option), writef(">>>>%d to %s\n",[No,Option])),
 	write('>>>>>followed by a full stop before hitting return.\n').
 
+%%%TURN OPTIONS
+
+%1 for writing the detective journal out
 turn(Player, 1) :-
 	writeDetectiveJournal,
 	play(Player).
 
+%2 for making a suggestion
+% note this is both for player 1 (us), and for recording other players suggestions down.
 turn(Player, 2) :-
 	makeSuggestion(Player),
 	play(Player).
 
+%3 for reporting a card shown. This is mostly useful when we are shown a card after our own suggestion,
+% but could be useful for some other mistakes the player makes (droping a card on the ground, us cheating ;-))
 turn(Player, 3) :-
 	reportCard,
 	play(Player).
 
+%4 is for ending the turn of the current player.
 turn(Player, 4) :-
 	nPlayers(N),
 	Player1 is (Player mod N) + 1,
 	play(Player1).
 
+%reads in a suggestion
 makeSuggestion(1) :- 
 	suggestion(_,_,_).
 makeSuggestion(_) :-
@@ -222,20 +260,22 @@ suggestion(Suspect,Room,Weapon) :-
 	writeWeapons,
 	read(WeaponNo),
 	(suspectno(SuspectNo,Suspect),roomno(RoomNo,Room),weaponno(WeaponNo,Weapon)) ->
-		true;
+		true, updateTotalSuggestions, updateCardSuggestions(Suspect), updateCardSuggestions(Room), updateCardSuggestions(Weapon);
 		(write('Bad input, try again.\n'),suggestion(_,_,_)).
 
 reportCard :-
 	nPlayers(NPlayers),
 	writef(">>>Whose card were you shown?\n>>>>Enter a number within the range 2-%d followed by a full stop before hitting return.\n", [NPlayers]),
 	read(ShowPlayer),
-	between(2,NPlayers,ShowPlayer) ->
+	(integer(ShowPlayer),between(2,NPlayers,ShowPlayer)) ->
 		readCard(ShowPlayer);
 		(write('Bad input, try again.\n'),reportCard).
 
+%tells the user via message if we were able to successfully infer a card
 checkIfCanInfer(ShowPlayer, SuggestionCards) :-
 	inferCardShown(ShowPlayer, SuggestionCards) ->
 		write('################################################\nWe were able to infer a card! Check your journal.\n################################################\n');write('Learned nothing... :(\n').
+
 % returns true and updates the database 
 %	if the card shown can be (and has not already been) inferred
 %
@@ -248,6 +288,10 @@ inferCardShown(ShowPlayer, SuggestionCards) :-
 	hasCard(Z, Card2),
 	Z \= ShowPlayer,
 	assert(hasCard(ShowPlayer, Card)).
+
+%prints a message if we are able to make an accusation with certainty.
+isAccusationReady :-
+	accusationReady(M,R,W) -> writef('########################################################\nDude! Make an accusation! Its %d in the %d with the %d\n########################################################\n', [M, R, W]); true.
 
 % returns true if we are ready to make the accusation:
 %	M in the R with the W!
