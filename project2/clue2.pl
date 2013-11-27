@@ -205,16 +205,14 @@ turn(Player, 4) :-
 	Player1 is (Player mod N) + 1,
 	play(Player1).
 
-makeSuggestion(Player) :-
+makeSuggestion(1) :- 
+	suggestion(_,_,_).
+makeSuggestion(_) :-
 	suggestion(Suspect,Room,Weapon),
-	Player =:= 1 ->
-		true;
-		(nPlayers(NPlayers),
-		writef(">>>Who showed a card?\n>>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
-		read(ShowPlayer),
-		(ShowPlayer =:= 1 ->
-			true;
-			inferCardShown(ShowPlayer,[Suspect,Room,Weapon]))).
+	nPlayers(NPlayers),
+	writef(">>>Who showed a card?\n>>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
+	read(ShowPlayer),
+	checkIfCanInfer(ShowPlayer,[Suspect,Room,Weapon]).
 
 suggestion(Suspect,Room,Weapon) :-
 	writeSuspects,
@@ -235,6 +233,9 @@ reportCard :-
 		readCard(ShowPlayer);
 		(write('Bad input, try again.\n'),reportCard).
 
+checkIfCanInfer(ShowPlayer, SuggestionCards) :-
+	inferCardShown(ShowPlayer, SuggestionCards) ->
+		write('################################################\nWe were able to infer a card! Check your journal.\n################################################\n');write('Learned nothing... :(\n').
 % returns true and updates the database 
 %	if the card shown can be (and has not already been) inferred
 %
@@ -246,7 +247,6 @@ inferCardShown(ShowPlayer, SuggestionCards) :-
 	Y \= ShowPlayer,
 	hasCard(Z, Card2),
 	Z \= ShowPlayer,
-	writef("Aha! Player %d has the card %d. I updated your detective journal for you.\n", [ShowPlayer, Card]),
 	assert(hasCard(ShowPlayer, Card)).
 
 % returns true if we are ready to make the accusation:
