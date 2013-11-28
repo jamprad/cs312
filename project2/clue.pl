@@ -161,7 +161,7 @@ readMyCards :-
 
 %reads a card type(1:suspect, 2:room, 3:weapon)
 readCard(Player) :-
-	write('>>>>>Type?\n>>>>>>Enter:\n>>>>>>>1 for suspect\n>>>>>>>2 for room\n>>>>>>>3 for weapon\nfollowed by a full stop before hitting return.\n'),
+	write('>>>>>Type? Enter:\n>>>>>>1 for suspect\n>>>>>>2 for room\n>>>>>>3 for weapon\nfollowed by a full stop before hitting return.\n'),
 	read(CardType),
 	(integer(CardType),between(1,3,CardType)) ->
 		readCard(Player, CardType);
@@ -334,7 +334,7 @@ inferCardShown(ShowPlayer, SuggestionCards) :-
 
 %prints a message if we are able to make an accusation with certainty.
 isAccusationReady :-
-	accusationReady(M,R,W) -> writef('########################################################\nDude! Make an accusation! Its %d in the %d with the %d\n########################################################\n', [M, R, W]); true.
+	accusationReady(M,R,W) -> writef('########################################################\nDude! Make an accusation! It was %d in the %d with the %d.\n########################################################\n', [M, R, W]); true.
 
 % returns true if we are ready to make the accusation:
 %	M in the R with the W!
