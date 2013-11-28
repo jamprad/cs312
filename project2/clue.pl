@@ -6,7 +6,6 @@
 
 :- dynamic nPlayers/1, firstPlayer/1, hasCard/2, totalSuggestions/1, cardSuggestionCount/2.
 
-
 %%CARDS
 %suspects
 suspect(colonelMustard).
@@ -60,6 +59,8 @@ weaponno(4,wrench).
 weaponno(5,candlestick).
 weaponno(6,pistol).
 
+%card suggestion counts
+
 %updates the total number of suggestions,
 % this is just a tally keeping track of the number 
 updateTotalSuggestions :- 
@@ -92,7 +93,28 @@ clear :-
 	retractall(firstPlayer(_)),
 	retractall(nPlayers(_)),
 	retractall(totalSuggestions(_)),
-	retractall(cardSuggestionCount(_,_)).
+	retractall(cardSuggestionCount(_,_)),
+	assert(cardSuggestionCount(colonelMustard,0)),
+	assert(cardSuggestionCount(missScarlet,0)),
+	assert(cardSuggestionCount(professorPlum,0)),
+	assert(cardSuggestionCount(mrGreen,0)),
+	assert(cardSuggestionCount(mrsWhite,0)),
+	assert(cardSuggestionCount(mrsPeacock,0)),
+	assert(cardSuggestionCount(kitchen,0)),
+	assert(cardSuggestionCount(lounge,0)),
+	assert(cardSuggestionCount(study,0)),
+	assert(cardSuggestionCount(library,0)),
+	assert(cardSuggestionCount(diningRoom,0)),
+	assert(cardSuggestionCount(hall,0)),
+	assert(cardSuggestionCount(billiardRoom,0)),
+	assert(cardSuggestionCount(conservatory,0)),
+	assert(cardSuggestionCount(ballroom,0)),
+	assert(cardSuggestionCount(rope,0)),
+	assert(cardSuggestionCount(leadPipe,0)),
+	assert(cardSuggestionCount(knife,0)),
+	assert(cardSuggestionCount(wrench,0)),
+	assert(cardSuggestionCount(candlestick,0)),
+	assert(cardSuggestionCount(pistol,0)).
 
 % game setup:
 %	1. How many players?
@@ -125,7 +147,7 @@ readFirstPlayer :-
 		(write('Bad input, try again.\n'),readFirstPlayer).
 
 
-%reads in the cards player 1 card.
+%reads in the player 1 cards.
 myCards(N, I) :-
 	I < N ->
 		(writef(">>>>Card %d\n", [I]),readCard(1),I1 is I + 1,myCards(N, I1)); true.
@@ -189,27 +211,25 @@ writeWeapons :-
 % 	info in the journal is:
 %		card, owner, times it has been suggested
 writeDetectiveJournal :-
-	writeln('------------DETECTIVE JOURNAL------------\n'),
+	writeln('################DETECTIVE JOURNAL###############\n'),
 	writeln('\tSuspects:'),
 	forall(suspect(X), writeCard(X)),
 	writeln('\tRooms:'),
 	forall(room(X), writeCard(X)),
 	writeln('\tWeapons:'),
 	forall(weapon(X), writeCard(X)),
-	writeln('\n-----------------------------------------\n').
+	writeln('\n##############################################\n').
 
 % writes
 %		X P 	if hasCard(P, X)
 %		X 		otherwise
-writeCard(X) :-
-	(cardSuggestionCount(X, TotalCard) ->
-		true;
-		TotalCard is 0),
+writeCard(Card) :-
+	cardSuggestionCount(Card, Count),
 	totalSuggestions(Total),
-	(hasCard(P,X) -> 
-		writef("\t\t%d -> Card Owner is %d", [X,P]);
-		writef("\t\t%d", [X])),
-	writef("\n\t\t\tseen in %d of %d suggestions.\n", [TotalCard, Total]).
+	(hasCard(Player,Card) -> 
+		writef("\t\t%d (owner is player %d, ", [Card,Player]);
+		writef("\t\t%d (", [Card])),
+	writef("%d/%d suggestions).\n", [Count, Total]).
 
 %starts a turn of a player, or continues the current turn after a turn option has been executed
 play(Player) :-
@@ -218,7 +238,7 @@ play(Player) :-
 		writef(">>It\'s player %d\'s turn.\n", [Player])),
 	writeTurnOptions,
 	read(TurnOption),
-	(integer(TurnOption),between(1,4,TurnOption)) -> 
+	(integer(TurnOption),between(1,5,TurnOption)) -> 
 		turn(Player, TurnOption);
 		(write('Bad input, try again.\n'),play(Player)).
 
@@ -226,7 +246,8 @@ play(Player) :-
 turnOption(1,"read your detective journal").
 turnOption(2,"make a suggestion by this turn\'s player").
 turnOption(3,"report card shown").
-turnOption(4,"end this turn").
+turnOption(4,"have a suggestion recommended for you").
+turnOption(5,"end this turn").
 writeTurnOptions :-
 	write('>>>Enter:\n'),
 	forall(turnOption(No,Option), writef(">>>>%d to %s\n",[No,Option])),
@@ -249,18 +270,25 @@ turn(Player, 3) :-
 	reportCard,
 	play(Player).
 
-%4 is for ending the turn of the current player.
+%4 is for having a suggestion recommended to you
 turn(Player, 4) :-
+	recommendSuggestion,
+	play(Player).
+
+%5 is for ending the turn of the current player.
+turn(Player, 5) :-
 	nPlayers(N),
 	Player1 is (Player mod N) + 1,
 	play(Player1).
 
 %reads in a suggestion
 makeSuggestion(1) :- 
-	suggestion(_,_,_).
-makeSuggestion(_) :-
+	suggestion(S,R,W),
+	writef('You suggested %d in the %d with the %d.\n', [S,R,W]).
+makeSuggestion(P) :-
 	suggestion(Suspect,Room,Weapon),
 	nPlayers(NPlayers),
+	writef('Player %d suggested %d in the %d with the %d.\n', [P,Suspect,Room,Weapon]),
 	writef(">>>Who showed a card?\n>>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
 	read(ShowPlayer),
 	checkIfCanInfer(ShowPlayer,[Suspect,Room,Weapon]).
@@ -318,4 +346,48 @@ accusationReady(M,R,W) :-
 	[M] = Suspects,
 	[R] = Rooms,
 	[W] = Weapons.
+
+
+% recommend suggestion
+%	prints the most frequently suggested cards
+%	for which the card
+%
+recommendSuggestion :-
+	recommendSuspect(S),
+	recommendRoom(R),
+	recommendWeapon(W),
+	writef('########################################################\nYou should suggest: %d in the %d with %d.\n########################################################\n',[S,R,W]).
+
+recommendSuspect(MaxCard) :-
+	findall(Count,(cardSuggestionCount(Card,Count),suspect(Card),not(hasCard(_,Card))), CardCounts),
+	maxL(CardCounts, MaxCount),
+	cardSuggestionCount(MaxCard, MaxCount),
+	suspect(MaxCard),
+	not(hasCard(_,MaxCard)).
+
+recommendRoom(MaxCard) :-
+	findall(Count,(cardSuggestionCount(Card,Count),room(Card),not(hasCard(_,Card))), CardCounts),
+	maxL(CardCounts, MaxCount),
+	cardSuggestionCount(MaxCard, MaxCount),
+	room(MaxCard),
+	not(hasCard(_,MaxCard)).
+
+recommendWeapon(MaxCard) :-
+	findall(Count,(cardSuggestionCount(Card,Count),weapon(Card),not(hasCard(_,Card))), CardCounts),
+	maxL(CardCounts, MaxCount),
+	cardSuggestionCount(MaxCard, MaxCount),
+	weapon(MaxCard),
+	not(hasCard(_,MaxCard)).
+
+%max2(X1, X2, max(X1,X2))
+max2(X, Y, X) :-
+    X >= Y.
+max2(X, Y, Y) :-
+    X < Y.
+
+%max of list 
+maxL([X], X).
+maxL([H | T], X) :-
+    maxL(T, I),
+    max2(H, I, X).
 

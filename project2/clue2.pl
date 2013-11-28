@@ -1,5 +1,5 @@
 %CLUE
-%Julian Pradinuk     +      Tucker Buchy
+%Julian Pradinuk            Tucker Buchy
 %44962090                   34091090
 %o6o7                       g9c7
 %jampradinuk@gmail.com      tuckerbuchy@gmail.com
@@ -75,6 +75,8 @@ updateCardSuggestions(Card) :-
 % play clue!
 %
 clue :- clear,
+		write('Welcome to Tudor Mansion. Your host, Mr. John Boddy has met an untimely end...\n'),
+		write('Please follow the game instructions *carefully*.\n'),
 		setup, 
 		firstPlayer(P),
 		play(P).
@@ -176,27 +178,27 @@ writeWeapons :-
 % 	info in the journal is:
 %		card, owner, times it has been suggested
 writeDetectiveJournal :-
-	writeln('------------DETECTIVE JOURNAL------------\n'),
+	writeln('------------------------DETECTIVE JOURNAL------------------------\n'),
 	writeln('\tSuspects:'),
 	forall(suspect(X), writeCard(X)),
 	writeln('\tRooms:'),
 	forall(room(X), writeCard(X)),
 	writeln('\tWeapons:'),
 	forall(weapon(X), writeCard(X)),
-	writeln('\n-----------------------------------------\n').
+	writeln('\n-----------------------------------------------------------------\n').
 
 % writes
 %		X P 	if hasCard(P, X)
 %		X 		otherwise
-writeCard(X) :-
-	(cardSuggestionCount(X, TotalCard) ->
+writeCard(Card) :-
+	(cardSuggestionCount(Card, Count) ->
 		true;
-		TotalCard is 0),
+		Count is 0),
 	totalSuggestions(Total),
-	(hasCard(P,X) -> 
-		writef("\t\t%d -> Card Owner is %d", [X,P]);
-		writef("\t\t%d", [X])),
-	writef("\n\t\t\tseen in %d of %d suggestions.\n", [TotalCard, Total]).
+	(hasCard(Owner,Card) -> 
+		writef("\t\t%d -> Card Owner is %d", [Card,Owner]);
+		writef("\t\t%d", [Card])),
+	writef("\n\t\t\tseen in %d of %d suggestions.\n", [Count, Total]).
 
 play(Player) :-
 	(Player =:= 1 -> 
@@ -211,33 +213,38 @@ play(Player) :-
 turnOption(1,"read your detective journal").
 turnOption(2,"make a suggestion by this turn\'s player").
 turnOption(3,"report card shown").
-turnOption(4,"end this turn").
+turnOption(4,"have a suggestion recommended for you").
+turnOption(5,"end this turn").
 writeTurnOptions :-
 	write('>>>Enter:\n'),
 	forall(turnOption(No,Option), writef(">>>>%d to %s\n",[No,Option])),
 	write('>>>>>followed by a full stop before hitting return.\n').
 
 %%%TURN OPTIONS
-
-%1 for writing the detective journal out
+%1 is for writing the detective journal out
 turn(Player, 1) :-
 	writeDetectiveJournal,
 	play(Player).
 
-%2 for making a suggestion
+%2 is for making a suggestion
 % note this is both for player 1 (us), and for recording other players suggestions down.
 turn(Player, 2) :-
 	makeSuggestion(Player),
 	play(Player).
 
-%3 for reporting a card shown. This is mostly useful when we are shown a card after our own suggestion,
+%3 is for reporting a card shown. This is mostly useful when we are shown a card after our own suggestion,
 % but could be useful for some other mistakes the player makes (droping a card on the ground, us cheating ;-))
 turn(Player, 3) :-
 	reportCard,
 	play(Player).
 
-%4 is for ending the turn of the current player.
+%4 is for having a suggestion recommended to you
 turn(Player, 4) :-
+	recommendSuggestion,
+	play(Player).
+
+%5 is for ending the turn of the current player.
+turn(Player, 5) :-
 	nPlayers(N),
 	Player1 is (Player mod N) + 1,
 	play(Player1).
@@ -274,7 +281,8 @@ reportCard :-
 %tells the user via message if we were able to successfully infer a card
 checkIfCanInfer(ShowPlayer, SuggestionCards) :-
 	inferCardShown(ShowPlayer, SuggestionCards) ->
-		write('################################################\nWe were able to infer a card! Check your journal.\n################################################\n');write('Learned nothing... :(\n').
+		write('################################################\nWe were able to infer a card! Check your journal.\n################################################\n');
+		write('Learned nothing... :(\n').
 
 % returns true and updates the database 
 %	if the card shown can be (and has not already been) inferred
@@ -291,7 +299,9 @@ inferCardShown(ShowPlayer, SuggestionCards) :-
 
 %prints a message if we are able to make an accusation with certainty.
 isAccusationReady :-
-	accusationReady(M,R,W) -> writef('########################################################\nDude! Make an accusation! Its %d in the %d with the %d\n########################################################\n', [M, R, W]); true.
+	accusationReady(M,R,W) -> 
+	writef('########################################################\nDude! Make an accusation! It was %d in the %d with the %d!\n########################################################\n', [M, R, W]);
+	true.
 
 % returns true if we are ready to make the accusation:
 %	M in the R with the W!
@@ -303,4 +313,48 @@ accusationReady(M,R,W) :-
 	[M] = Suspects,
 	[R] = Rooms,
 	[W] = Weapons.
+
+% recommend suggestion
+%	prints the most frequently suggested cards
+%	for which the card
+%
+recommendSuggestion :-
+	recommendSuspect(S),
+	recommendRoom(R),
+	recommendWeapon(W),
+	writef('########################################################\nYou should suggest: %d in the %d with %d.\n########################################################\n',[S,R,W]).
+
+recommendSuspect(S) :-
+	findall(Count, (not(hasCard(_,Card),suspect(Card),cardSuggestionCount(Card,Count))), CardCounts),
+	maxL(CardCounts, MaxCount),
+	not(hasCard(_,MaxCard)),
+	suspect(MaxCard),
+	cardSuggestionCount(MaxCard, MaxCount).
+
+recommendRoom(R) :-
+	findall(cardSuggestionCount(Card,Count),(room(Card),not(hasCard(_,Card))), CardSuggestionCounts),
+	maxL(CardCounts, MaxCount),
+	not(hasCard(_,MaxCard)),
+	room(MaxCard),
+	cardSuggestionCount(MaxCard, MaxCount).
+
+recommendWeapon(W) :-
+	findall(cardSuggestionCount(Card,Count),(weapon(Card),not(hasCard(_,Card))), CardSuggestionCounts),
+	maxL(CardCounts, MaxCount),
+	not(hasCard(_,MaxCard)),
+	weapon(MaxCard),
+	cardSuggestionCount(MaxCard, MaxCount).
+
+
+%max2(X1, X2, max(X1,X2))
+max2(X, Y, X) :-
+    X >= Y.
+max2(X, Y, Y) :-
+    X < Y.
+
+%max of list 
+maxL([X], X).
+maxL([H | T], X) :-
+    maxL(T, I),
+    maxOfTwo(H, I, X).
 

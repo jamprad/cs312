@@ -1,33 +1,41 @@
 
-=============================CLUE=============================
-Julian Pradinuk           			Tucker Buchy
-44962090                   			  34091090
-o6o7                       			  g9c7
-jampradinuk@gmail.com      			tuckerbuchy@gmail.com
-==============================================================
-What the program does:
-1- Set up the game: how many players, the order of
-play, which cards you are holding
+========================================================================================================================
+Julian Pradinuk           				  ????						    Tucker Buchy
+44962090                   			  	 PROLOG							34091090
+o6o7                       			  	  CLUE							    g9c7
+jampradinuk@gmail.com      				  ????				           tuckerbuchy@gmail.com
+========================================================================================================================
+
+					           What the program does
+
+1- Set up the game: how many players, the order of play, which cards you are holding
 2- Make suggestions
 3- Report cards shown
-4- Read your detective journal (see the contents of the 
-database)
+4- Read your detective journal (see the contents of the database)
 5- Know when to make an accusation
-6- Take advantage of what can be inferred from the suggestions
-of other players
-7- Keeps track of the percentage of times a card has appeared 
-in suggestions.
+6- Take advantage of what can be inferred from the suggestions of other players
+7- Keeps track of the percentage of times a card has appeared in suggestions.
 
-How to use:
+========================================================================================================================
 
-To play clue, simply load the program clue.pl into the Swipl prolog interpreter with [clue].
+						        How to play
 
-To begin a game, call the clue. predicate. Instructions will be shown in the game. 
+To play clue, simply load the program clue.pl into the Swipl prolog interpreter, start a game:
+-Start a new swipl session.
+-Type "[clue]."
+-Type "clue."
+-FOLLOW THE INSTRUCTIONS!
 
-One thing to note is that the user of our program is always known as player '1'. The left of him is player '2'. This is how we address different players throughout the user interface.
+Players:
+-There must be 3-6 players
+-The user (YOU) is always as player '1'. The player sitting left of him/her is player '2'. Player numbers increase
+around the board. This is how we address different players throughout the user interface.
 
-Note that when a game of clue ends, the Swipl environment will still have all of the predicates generated from that round in the database. However, when a new game of clue is run, the predicates are cleared.
-Therefore, you do not need to restart the interpreted to play several games of clue. 
+Note: when a game of clue ends, the Swipl environment will still have all of the predicates generated from that round
+in the database. However, when a new game of clue is run, the predicates are cleared. Therefore, you do not need to 
+restart the interpreter to play several games of clue.
+
+========================================================================================================================
 
 Feature Descriptions:
 
