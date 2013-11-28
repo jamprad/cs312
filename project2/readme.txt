@@ -1,9 +1,9 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 =============================CLUE=============================
-Julian Pradinuk           						  Tucker Buchy
-44962090                   							  34091090
-o6o7                       								  g9c7
-jampradinuk@gmail.com      			     tuckerbuchy@gmail.com
+Julian Pradinuk           			Tucker Buchy
+44962090                   			  34091090
+o6o7                       			  g9c7
+jampradinuk@gmail.com      			tuckerbuchy@gmail.com
 ==============================================================
 What the program does:
 1- Set up the game: how many players, the order of
