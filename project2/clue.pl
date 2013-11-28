@@ -4,23 +4,18 @@
 %o6o7                       g9c7
 %jampradinuk@gmail.com      tuckerbuchy@gmail.com
 
-:- dynamic suspect/1, weapon/1, room/1, nPlayers/1, firstPlayer/1, hasCard/2.
-%every suspect could be the murderer
+:- dynamic nPlayers/1, firstPlayer/1, hasCard/2, totalSuggestions/1, cardSuggestionCount/2.
+
+
+%%CARDS
+%suspects
 suspect(colonelMustard).
 suspect(missScarlet).
 suspect(professorPlum).
 suspect(mrGreen).
 suspect(mrsWhite).
 suspect(mrsPeacock).
-
-suspectno(1,colonelMustard).
-suspectno(2,missScarlet).
-suspectno(3,professorPlum).
-suspectno(4,mrGreen).
-suspectno(5,mrsWhite).
-suspectno(6,mrsPeacock).
-
-%every room could be the kill room
+%rooms
 room(kitchen).
 room(lounge).
 room(study).
@@ -30,6 +25,23 @@ room(hall).
 room(billiardRoom).
 room(conservatory).
 room(ballroom).
+%weapons
+weapon(rope).
+weapon(leadPipe).
+weapon(knife).
+weapon(wrench).
+weapon(candlestick).
+weapon(pistol).
+
+%number to card mapping
+%	we use numbers as input to make the UI easier to work with
+%	so these are the mapping of cards and numbers
+suspectno(1,colonelMustard).
+suspectno(2,missScarlet).
+suspectno(3,professorPlum).
+suspectno(4,mrGreen).
+suspectno(5,mrsWhite).
+suspectno(6,mrsPeacock).
 
 roomno(1,kitchen).
 roomno(2,lounge).
@@ -41,14 +53,6 @@ roomno(7,billiardRoom).
 roomno(8,conservatory).
 roomno(9,ballroom).
 
-%every weapon could be the murder weapon
-weapon(rope).
-weapon(leadPipe).
-weapon(knife).
-weapon(wrench).
-weapon(candlestick).
-weapon(pistol).
-
 weaponno(1,rope).
 weaponno(2,leadPipe).
 weaponno(3,knife).
@@ -56,19 +60,240 @@ weaponno(4,wrench).
 weaponno(5,candlestick).
 weaponno(6,pistol).
 
-card(X) :- 
-	suspect(X);
-	room(X);
-	weapon(X).
+%updates the total number of suggestions,
+% this is just a tally keeping track of the number 
+updateTotalSuggestions :- 
+	totalSuggestions(N),
+	N1 is N + 1,
+	retractall(totalSuggestions(_)),
+	assert(totalSuggestions(N1)).
 
+%updates the number of times a card has appeared in a suggestion
+updateCardSuggestions(Card) :-
+	cardSuggestionCount(Card, N) ->
+		%update existing count
+		(N1 is N + 1,
+		retractall(cardSuggestionCount(Card, _)),
+		assert(cardSuggestionCount(Card, N1)));
+		%start one at 1
+		assert(cardSuggestionCount(Card, 1)).
+
+% play clue!
+%
 clue :- clear,
 		setup, 
 		firstPlayer(P),
 		play(P).
 
-hasCards(Player, Cards) :-
-	findall(Card, hasCard(Player, Card), Cards).
+% clear the database
+%
+clear :-
+	retractall(hasCard(_,_)),
+	retractall(firstPlayer(_)),
+	retractall(nPlayers(_)),
+	retractall(totalSuggestions(_)),
+	retractall(cardSuggestionCount(_,_)).
 
+% game setup:
+%	1. How many players?
+%	2. Who starts?
+%	3. How many cards are you holding and what are they?
+%
+setup :-
+	assert(totalSuggestions(0)),
+	readNPlayers,
+	readFirstPlayer,
+	readMyCards.
+
+%reads the number of players the game has in it, used during set up.
+readNPlayers :-
+	write('>>How many players?\n>>>Enter a number within the range 3-6 followed by a full stop before hitting return.\n'),
+	read(NPlayers),
+	(integer(NPlayers),between(3,6,NPlayers)) ->
+		(writef("You are player 1.\nThe player to your left is player 2.\nThe player to your right is player %d.\n", [NPlayers]),
+			assert(nPlayers(NPlayers)));
+		(write('Bad input, try again.\n'),readNPlayers).
+
+%reads who will be the first player of the game, used during set up.
+readFirstPlayer :-
+	nPlayers(NPlayers),
+	writef(">>Who starts?\n>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
+	read(FirstPlayer),
+	(integer(FirstPlayer),between(1,NPlayers,FirstPlayer)) -> 
+		(writef("Player %d starts.\n", [FirstPlayer]),
+			assert(firstPlayer(FirstPlayer)));
+		(write('Bad input, try again.\n'),readFirstPlayer).
+
+
+%reads in the cards player 1 card.
+myCards(N, I) :-
+	I < N ->
+		(writef(">>>>Card %d\n", [I]),readCard(1),I1 is I + 1,myCards(N, I1)); true.
+
+readMyCards :-
+	write('>>How many cards were you dealt?\n>>>Enter a number greater than or equal to 0 followed by a full stop before hitting return.\n'),
+	read(NCards),
+	(integer(NCards),NCards >= 0) ->
+		myCards(NCards, 0);
+		(write('Bad input, try again.\n'),readMyCards).
+
+%reads a card type(1:suspect, 2:room, 3:weapon)
+readCard(Player) :-
+	write('>>>>>Type?\n>>>>>>Enter:\n>>>>>>>1 for suspect\n>>>>>>>2 for room\n>>>>>>>3 for weapon\nfollowed by a full stop before hitting return.\n'),
+	read(CardType),
+	(integer(CardType),between(1,3,CardType)) ->
+		readCard(Player, CardType);
+		(write('Bad input, try again.\n'),readCard(Player)).
+
+%suspect card reading
+readCard(Player, 1) :-
+	writeSuspects,
+	read(SuspectNo),
+	suspectno(SuspectNo, Suspect) ->
+		assert(hasCard(Player,Suspect));
+		(write('Bad input, try again.\n'),readCard(Player, 1)).
+
+%room card reading
+readCard(Player, 2) :-
+	writeRooms,
+	read(RoomNo),
+	roomno(RoomNo, Room) ->
+		assert(hasCard(Player,Room));
+		(write('Bad input, try again.\n'),readCard(Player, 2)).
+
+%weapon card reading
+readCard(Player, 3) :-
+	writeWeapons,
+	read(WeaponNo),
+	weaponno(WeaponNo, Weapon) ->
+		assert(hasCard(Player,Weapon));
+		(write('Bad input, try again.\n'),readCard(Player, 3)).
+
+%formatting for the selection of rooms, suspects, and weapons
+writeSuspects :-
+	write('>>>>>Suspect? Enter:\n'),
+	forall(suspectno(No,Suspect), writef(">>>>>>%d for %d\n", [No, Suspect])),
+	write('>>>>>>>followed by a full stop before hitting return.\n').
+
+writeRooms :-
+	write('>>>>>Room? Enter:\n'),
+	forall(roomno(No,Room), writef(">>>>>>%d for %d\n", [No, Room])),
+	write('>>>>>>>followed by a full stop before hitting return.\n').
+
+writeWeapons :-
+	write('>>>>>Weapon? Enter:\n'),
+	forall(weaponno(No,Weapon), writef(">>>>>>%d for %d\n", [No, Weapon])),
+	write('>>>>>>>followed by a full stop before hitting return.\n').
+
+%writes the detective journal to the console
+% 	info in the journal is:
+%		card, owner, times it has been suggested
+writeDetectiveJournal :-
+	writeln('------------DETECTIVE JOURNAL------------\n'),
+	writeln('\tSuspects:'),
+	forall(suspect(X), writeCard(X)),
+	writeln('\tRooms:'),
+	forall(room(X), writeCard(X)),
+	writeln('\tWeapons:'),
+	forall(weapon(X), writeCard(X)),
+	writeln('\n-----------------------------------------\n').
+
+% writes
+%		X P 	if hasCard(P, X)
+%		X 		otherwise
+writeCard(X) :-
+	(cardSuggestionCount(X, TotalCard) ->
+		true;
+		TotalCard is 0),
+	totalSuggestions(Total),
+	(hasCard(P,X) -> 
+		writef("\t\t%d -> Card Owner is %d", [X,P]);
+		writef("\t\t%d", [X])),
+	writef("\n\t\t\tseen in %d of %d suggestions.\n", [TotalCard, Total]).
+
+%starts a turn of a player, or continues the current turn after a turn option has been executed
+play(Player) :-
+	(Player =:= 1 -> 
+		(write('>>It\'s your turn.\n'), isAccusationReady);
+		writef(">>It\'s player %d\'s turn.\n", [Player])),
+	writeTurnOptions,
+	read(TurnOption),
+	(integer(TurnOption),between(1,4,TurnOption)) -> 
+		turn(Player, TurnOption);
+		(write('Bad input, try again.\n'),play(Player)).
+
+%%%TURN OPTIONS
+turnOption(1,"read your detective journal").
+turnOption(2,"make a suggestion by this turn\'s player").
+turnOption(3,"report card shown").
+turnOption(4,"end this turn").
+writeTurnOptions :-
+	write('>>>Enter:\n'),
+	forall(turnOption(No,Option), writef(">>>>%d to %s\n",[No,Option])),
+	write('>>>>>followed by a full stop before hitting return.\n').
+
+%1 for writing the detective journal out
+turn(Player, 1) :-
+	writeDetectiveJournal,
+	play(Player).
+
+%2 for making a suggestion
+% note this is both for player 1 (us), and for recording other players suggestions down.
+turn(Player, 2) :-
+	makeSuggestion(Player),
+	play(Player).
+
+%3 for reporting a card shown. This is mostly useful when we are shown a card after our own suggestion,
+% but could be useful for some other mistakes the player makes (droping a card on the ground, us cheating ;-))
+turn(Player, 3) :-
+	reportCard,
+	play(Player).
+
+%4 is for ending the turn of the current player.
+turn(Player, 4) :-
+	nPlayers(N),
+	Player1 is (Player mod N) + 1,
+	play(Player1).
+
+%reads in a suggestion
+makeSuggestion(1) :- 
+	suggestion(_,_,_).
+makeSuggestion(_) :-
+	suggestion(Suspect,Room,Weapon),
+	nPlayers(NPlayers),
+	writef(">>>Who showed a card?\n>>>>Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers]),
+	read(ShowPlayer),
+	checkIfCanInfer(ShowPlayer,[Suspect,Room,Weapon]).
+
+%performs the suggestion reading
+suggestion(Suspect,Room,Weapon) :-
+	writeSuspects,
+	read(SuspectNo),
+	writeRooms,
+	read(RoomNo),
+	writeWeapons,
+	read(WeaponNo),
+	(suspectno(SuspectNo,Suspect),roomno(RoomNo,Room),weaponno(WeaponNo,Weapon)) ->
+		true, updateTotalSuggestions, updateCardSuggestions(Suspect), updateCardSuggestions(Room), updateCardSuggestions(Weapon);
+		(write('Bad input, try again.\n'),suggestion(_,_,_)).
+
+%reads in and reports a card as being posessed by the specified player. This asserts the card ownership in the database
+reportCard :-
+	nPlayers(NPlayers),
+	writef(">>>Whose card were you shown?\n>>>>Enter a number within the range 2-%d followed by a full stop before hitting return.\n", [NPlayers]),
+	read(ShowPlayer),
+	(integer(ShowPlayer),between(2,NPlayers,ShowPlayer)) ->
+		readCard(ShowPlayer);
+		(write('Bad input, try again.\n'),reportCard).
+
+%tells the user via message if we were able to successfully infer a card
+checkIfCanInfer(ShowPlayer, SuggestionCards) :-
+	inferCardShown(ShowPlayer, SuggestionCards) ->
+		write('################################################\nWe were able to infer a card! Check your journal.\n################################################\n');write('Learned nothing... :(\n').
+
+% returns true and updates the database 
+%	if the card shown can be (and has not already been) inferred
+%
 inferCardShown(ShowPlayer, SuggestionCards) :-
 	select(Card, SuggestionCards, TwoCards),
 	[Card1, Card2] = TwoCards,
@@ -77,136 +302,20 @@ inferCardShown(ShowPlayer, SuggestionCards) :-
 	Y \= ShowPlayer,
 	hasCard(Z, Card2),
 	Z \= ShowPlayer,
-	writef("Aha! Player %d has the card %d.\n", [ShowPlayer, Card]),
 	assert(hasCard(ShowPlayer, Card)).
 
-readDetectiveJournal :-
-	writeln('\tsuspects:'),
-	forall(suspect(X), printCard(X)),
-	writeln('\tweapons:'),
-	forall(weapon(X), printCard(X)),
-	writeln('\trooms:'),
-	forall(room(X), printCard(X)).
+%prints a message if we are able to make an accusation with certainty.
+isAccusationReady :-
+	accusationReady(M,R,W) -> writef('########################################################\nDude! Make an accusation! Its %d in the %d with the %d\n########################################################\n', [M, R, W]); true.
 
-%prints
-%		card player 	if hasCard(player, card)
-%		card 			otherwise
-printCard(X) :-
-	hasCard(P,X) -> writef("\t\t%d %d\n", [X,P]); writef("\t\t%d\n", [X]).
+% returns true if we are ready to make the accusation:
+%	M in the R with the W!
+%
+accusationReady(M,R,W) :-
+	findall(X,(suspect(X),not(hasCard(_,X))),Suspects),
+	findall(Y,(room(Y),not(hasCard(_,Y))),Rooms),
+	findall(Z,(weapon(Z),not(hasCard(_,Z))),Weapons),
+	[M] = Suspects,
+	[R] = Rooms,
+	[W] = Weapons.
 
-turn(Player, 1) :- suggest(Player),
-					play(Player).
-turn(Player, 2) :- readDetectiveJournal,
-					play(Player).
-turn(Player, 3) :- reportCard,
-					play(Player).
-turn(Player, 4) :-  nPlayers(N),
-					Player1 is (Player mod N) + 1,
-					play(Player1).
-
-%suspects
-reportCard(1, Suspect) :- printSuspects,
-					read(SuspectNo),
-					suspectno(SuspectNo,Suspect).
-
-%rooms
-reportCard(2, Room) :- printRooms,
-					read(RoomNo),
-					roomno(RoomNo, Room).
-%weapons
-reportCard(3, Weapon) :- printWeapons,
-					read(WeaponNo),
-					weaponno(WeaponNo,Weapon).
-
-
-proposeSuggestion :- 
-	suspect(S),not(hasCard(_,S)),
-	room(R),not(hasCard(_,R)),
-	weapon(W),not(hasCard(_,W)),
-	writef("You could suggest %d in the %d with the %d.\n", [S,R,W]).
-
-reportCard :- write('Whose card were you shown?\n'),
-			read(Player),
-			reportCard(Player).
-
-reportCard(HasPlayer) :- 
-			  write('Was the card a suspect (1.), room (2.) or weapon (3.)?\n'),
-			  	read(CardOption),
-			  	reportCard(CardOption, Card),
-			  	assert(hasCard(HasPlayer, Card)).
-
-
-play(1) :-	write('It\'s your turn.\n'), % Make a suggestion? Enter y or n \c
-					%followed by a full stop before hitting return.\n'),
-				read(TurnOption),
-				turn(1, TurnOption).
-play(P) :-	write('It\'s player '),
-				write(P),
-				write('\'s turn.\n'), % Did they make a suggestion? Enter y or n \c 
-				%	followed by a full stop before hitting return.\n'),
-				%read(YayOrNay),
-				%yayOrNay(YayOrNay),
-				%P1 is (P mod N) + 1, 
-				%play(P1, N).
-				read(TurnOption),
-				turn(P, TurnOption).
-
-clear :-
-	retractall(hasCard(_,_)),
-	retractall(firstPlayer(_)),
-	retractall(nPlayers(_)).
-
-setup :-
-	write('How many players?\n Enter a number within the range \c
-		3-6 followed by a full stop before hitting return.\n'),
-	read(NPlayers),
-	between(3,6,NPlayers),
-	assert(nPlayers(NPlayers)),
-	writef("You are player 1.\n\c
-			The player to your left is player 2.\n\c
-			The player to your right is player %d.\n\c
-			Who starts?\n\c
-			Enter a number within the range 1-%d followed by a full stop before hitting return.\n", [NPlayers, NPlayers]),
-	read(FirstPlayer),
-	between(1,NPlayers,FirstPlayer),
-	assert(firstPlayer(FirstPlayer)),
-	write('How many cards are you holding?\n'),
-	read(NoCards),
-	mycards(NoCards).
-
-mycards(0).
-mycards(N) :- 	reportCard(1),
-				N1 is N - 1,
-				mycards(N1).
-
-printSuspects :-
-	write('\t1 for Colonel Mustard,\n\t2 for Miss Scarlet,\n\t3 for Professor Plum,\n\t4 for Mr. Green,\n\t5 for Mrs. White\n\t6 for Mrs. Peacock\n').
-printRooms :-
-	write('\t1 for Kitchen,\n\t2 for Lounge,\n\t3 for Study,\n\t4 for Library,\n\t5 for Dining Room,\n\t6 for Hall,\n\t7 for Billiard Room,\n\t8 for Conservatory,\n\t9 for Ballroom\n').
-printWeapons :-
-	write('\t1 for Rope,\n\t2 for Lead Pipe,\n\t3 for Knife,\n\t4 for Wrench,\n\t5 for Candlestick,\n\t6 for Pistol\n').
-
-suggest(1) :-
-	suggestion(_, _, _).
-suggest(_) :-
-	suggestion(Suspect, Room, Weapon),
-	write('Who showed a card?\n'),
-	read(ShowPlayer),
-	inferCardShown(ShowPlayer, [Suspect,Room,Weapon]).
-
-suggestion(Suspect, Room, Weapon) :-
-	write('Suspect?\nEnter:\n'),
-	printSuspects,
-	read(SuspectNo),
-	between(1,6,SuspectNo),
-	write('Room?\nEnter:\n'),
-	printRooms,
-	read(RoomNo),
-	between(1,9,RoomNo),
-	write('Weapon?\nEnter:\n'),
-	printWeapons,
-	read(WeaponNo),
-	between(1,6,WeaponNo),
-	suspectno(SuspectNo, Suspect),
-	roomno(RoomNo, Room),
-	weaponno(WeaponNo, Weapon).
